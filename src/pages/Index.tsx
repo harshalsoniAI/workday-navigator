@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import GraphCanvas from "@/components/GraphCanvas";
 import DetailPanel from "@/components/DetailPanel";
 import AppHeader from "@/components/AppHeader";
@@ -13,6 +13,7 @@ export default function Index() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedSubset, setFocusedSubset] = useState<string | null>("worker");
+  const [navigationPath, setNavigationPath] = useState<string[]>([]);
 
   const { visibleNodes, visibleEdges } = useMemo(() => {
     if (searchQuery.trim()) {
@@ -48,11 +49,32 @@ export default function Index() {
     return { visibleNodes: nodes, visibleEdges: edges };
   }, [searchQuery, focusedSubset]);
 
-  const handleSelectNode = (id: string) => {
+  const handleSelectNode = useCallback((id: string) => {
+    setSelectedNodeId((prev) => {
+      setNavigationPath((path) => {
+        if (prev && prev !== id) {
+          // Clicking back to a node already in the path — truncate
+          const idx = path.indexOf(id);
+          if (idx !== -1) return path.slice(0, idx);
+          return [...path, prev];
+        }
+        return path;
+      });
+      return id;
+    });
+    setFocusedSubset(id);
+    setSearchQuery("");
+  }, []);
+
+  const handleBreadcrumbNav = useCallback((id: string) => {
+    setNavigationPath((path) => {
+      const idx = path.indexOf(id);
+      return idx !== -1 ? path.slice(0, idx) : path;
+    });
     setSelectedNodeId(id);
     setFocusedSubset(id);
     setSearchQuery("");
-  };
+  }, []);
 
   const handleShowAll = () => {
     setFocusedSubset(null);
@@ -88,7 +110,12 @@ export default function Index() {
 
         {/* Detail Panel */}
         <div className="w-[380px] border-l border-border bg-card shrink-0 overflow-hidden">
-          <DetailPanel node={selectedNode} onSelectNode={handleSelectNode} />
+          <DetailPanel
+            node={selectedNode}
+            onSelectNode={handleSelectNode}
+            navigationPath={navigationPath}
+            onBreadcrumbNav={handleBreadcrumbNav}
+          />
         </div>
       </div>
     </div>

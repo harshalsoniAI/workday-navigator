@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network } from "lucide-react";
+import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,8 @@ interface DetailPanelProps {
   node: BusinessObjectNode | null;
   onSelectNode: (id: string) => void;
   isLoading?: boolean;
+  navigationPath?: string[];
+  onBreadcrumbNav?: (id: string) => void;
 }
 
 const containerVariants = {
@@ -114,7 +116,7 @@ function LoadingState() {
   );
 }
 
-export default function DetailPanel({ node, onSelectNode, isLoading }: DetailPanelProps) {
+export default function DetailPanel({ node, onSelectNode, isLoading, navigationPath = [], onBreadcrumbNav }: DetailPanelProps) {
   const [fieldSearch, setFieldSearch] = useState("");
 
   if (isLoading) return <LoadingState />;
@@ -127,6 +129,10 @@ export default function DetailPanel({ node, onSelectNode, isLoading }: DetailPan
     f.name.toLowerCase().includes(fieldSearch.toLowerCase())
   );
 
+  const breadcrumbNodes = navigationPath
+    .map((id) => getNodeById(id))
+    .filter(Boolean) as BusinessObjectNode[];
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -137,6 +143,29 @@ export default function DetailPanel({ node, onSelectNode, isLoading }: DetailPan
         transition={{ duration: 0.2 }}
         className="h-full flex flex-col"
       >
+        {/* Breadcrumb */}
+        {breadcrumbNodes.length > 0 && (
+          <div className="px-5 pt-3 pb-1 border-b border-border">
+            <div className="flex items-center gap-1 flex-wrap text-[11px]">
+              {breadcrumbNodes.map((crumb, i) => (
+                <span key={crumb.id} className="flex items-center gap-1">
+                  <button
+                    onClick={() => onBreadcrumbNav?.(crumb.id)}
+                    className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[100px]"
+                    title={crumb.name}
+                  >
+                    {crumb.name}
+                  </button>
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                </span>
+              ))}
+              <span className="font-semibold text-foreground truncate max-w-[120px]" title={node.name}>
+                {node.name}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="p-5 border-b border-border">
           <div className="flex items-start gap-3">
