@@ -57,6 +57,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        graph: {
+          node: "hsl(var(--graph-node))",
+          "node-selected": "hsl(var(--graph-node-selected))",
+          edge: "hsl(var(--graph-edge))",
+          canvas: "hsl(var(--graph-canvas))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
