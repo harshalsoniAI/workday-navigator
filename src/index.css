@@ -41,7 +41,13 @@ All colors MUST be HSL.
     --graph-node: 234 89% 60%;
     --graph-node-selected: 234 89% 50%;
     --graph-edge: 220 14% 82%;
-    --graph-canvas: 220 20% 98%;
+    --graph-canvas: 220 20% 98.5%;
+
+    --node-hcm: 234 89% 60%;
+    --node-payroll: 160 70% 42%;
+    --node-benefits: 280 65% 55%;
+    --node-finance: 35 90% 50%;
+    --node-time: 190 70% 45%;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 224 30% 15%;
