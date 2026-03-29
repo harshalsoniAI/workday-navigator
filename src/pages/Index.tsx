@@ -23,7 +23,7 @@ import type {
   BusinessObjectNode,
 } from "@/types/businessObject";
 
-const INITIAL_NODE_LIMIT = 6;
+const INITIAL_NODE_LIMIT = 10;
 
 function edgeKey(source: string, target: string) {
   return `${source}\0${target}`;
