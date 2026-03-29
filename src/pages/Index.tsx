@@ -1,33 +1,230 @@
-import { useState, useMemo, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import GraphCanvas from "@/components/GraphCanvas";
 import DetailPanel from "@/components/DetailPanel";
 import AppHeader from "@/components/AppHeader";
 import {
-  nodes,
-  edges,
-  getConnectedNodeIds,
-  getNodeById,
-} from "@/data/mockData";
+  edgeRowToEdge,
+  fieldRowToField,
+  nodeRowToNode,
+  stubNode,
+} from "@/lib/graphModel";
+import { getConnectedNodeIds } from "@/lib/graphUtils";
+import {
+  getBusinessObjectEdgesTouching,
+  getBusinessObjectFields,
+  getBusinessObjectNodesByNames,
+  getBusinessObjectNodesInitial,
+  searchBusinessObjects,
+} from "@/lib/queries";
+import type { BusinessObjectEdgeRow } from "@/types/supabase";
+import type {
+  BusinessObjectEdge,
+  BusinessObjectField,
+  BusinessObjectNode,
+} from "@/types/businessObject";
+
+const INITIAL_NODE_LIMIT = 6;
+
+function edgeKey(source: string, target: string) {
+  return `${source}\0${target}`;
+}
+
+function mergeTouchingEdges(
+  prev: BusinessObjectEdge[],
+  rows: BusinessObjectEdgeRow[]
+): BusinessObjectEdge[] {
+  const map = new Map<string, BusinessObjectEdge>();
+  for (const e of prev) {
+    map.set(edgeKey(e.source, e.target), e);
+  }
+  rows.forEach((r, i) => {
+    const e = edgeRowToEdge(r, i);
+    const k = edgeKey(e.source, e.target);
+    if (!map.has(k)) map.set(k, e);
+  });
+  return Array.from(map.values());
+}
+
+function ensureStubsForEdges(
+  nodes: Record<string, BusinessObjectNode>,
+  edgeList: BusinessObjectEdge[]
+): Record<string, BusinessObjectNode> {
+  const next = { ...nodes };
+  for (const e of edgeList) {
+    if (!next[e.source]) next[e.source] = stubNode(e.source);
+    if (!next[e.target]) next[e.target] = stubNode(e.target);
+  }
+  return next;
+}
 
 export default function Index() {
+  const [nodesById, setNodesById] = useState<Record<string, BusinessObjectNode>>(
+    {}
+  );
+  const [edges, setEdges] = useState<BusinessObjectEdge[]>([]);
+  const [graphLoading, setGraphLoading] = useState(true);
+  const [graphError, setGraphError] = useState<string | null>(null);
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [focusedSubset, setFocusedSubset] = useState<string | null>("worker");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [focusedSubset, setFocusedSubset] = useState<string | null>(null);
   const [navigationPath, setNavigationPath] = useState<string[]>([]);
 
+  const [searchMatchIds, setSearchMatchIds] = useState<string[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const [panelFields, setPanelFields] = useState<BusinessObjectField[]>([]);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
+  const [fieldsError, setFieldsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 320);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setGraphLoading(true);
+      setGraphError(null);
+      try {
+        const rows = await getBusinessObjectNodesInitial(INITIAL_NODE_LIMIT);
+        if (cancelled) return;
+        const nextNodes: Record<string, BusinessObjectNode> = {};
+        for (const r of rows) {
+          const n = nodeRowToNode(r);
+          nextNodes[n.id] = n;
+        }
+        const seedNames = Object.keys(nextNodes);
+        if (seedNames.length === 0) {
+          setNodesById({});
+          setEdges([]);
+          setFocusedSubset(null);
+          return;
+        }
+        const edgeRows = await getBusinessObjectEdgesTouching(seedNames);
+        if (cancelled) return;
+        const edgeList = mergeTouchingEdges([], edgeRows);
+        const withStubs = ensureStubsForEdges(nextNodes, edgeList);
+        setNodesById(withStubs);
+        setEdges(edgeList);
+        setFocusedSubset(seedNames[0]);
+      } catch (e) {
+        if (!cancelled) {
+          setGraphError(
+            e instanceof Error ? e.message : "Failed to load business objects"
+          );
+        }
+      } finally {
+        if (!cancelled) setGraphLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const q = debouncedSearch.trim();
+    if (!q) {
+      setSearchMatchIds(null);
+      setSearchError(null);
+      setSearchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setSearchLoading(true);
+      setSearchError(null);
+      setSearchMatchIds(null);
+      try {
+        const rows = await searchBusinessObjects(q);
+        if (cancelled) return;
+        const ids = rows.map((r) => r.business_object_name);
+        setSearchMatchIds(ids);
+
+        setNodesById((prev) => {
+          const next = { ...prev };
+          for (const r of rows) {
+            const n = nodeRowToNode(r);
+            next[n.id] = n;
+          }
+          return next;
+        });
+
+        if (ids.length) {
+          const edgeRows = await getBusinessObjectEdgesTouching(ids);
+          if (cancelled) return;
+          setEdges((prev) => {
+            const next = mergeTouchingEdges(prev, edgeRows);
+            setNodesById((p) => ensureStubsForEdges(p, next));
+            return next;
+          });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setSearchError(
+            e instanceof Error ? e.message : "Search failed"
+          );
+          setSearchMatchIds([]);
+        }
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch]);
+
+  const expandAroundNode = useCallback(async (nodeId: string) => {
+    setGraphError(null);
+    try {
+      const edgeRows = await getBusinessObjectEdgesTouching([nodeId]);
+
+      setEdges((prev) => {
+        const next = mergeTouchingEdges(prev, edgeRows);
+        setNodesById((p) => ensureStubsForEdges(p, next));
+        return next;
+      });
+
+      const rows = await getBusinessObjectNodesByNames([nodeId]);
+      if (rows[0]) {
+        const n = nodeRowToNode(rows[0]);
+        setNodesById((prev) => ({ ...prev, [n.id]: n }));
+      }
+    } catch (e) {
+      setGraphError(
+        e instanceof Error ? e.message : "Failed to expand graph"
+      );
+    }
+  }, []);
+
+  const allNodes = useMemo(
+    () => Object.values(nodesById),
+    [nodesById]
+  );
+
   const { visibleNodes, visibleEdges } = useMemo(() => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matched = nodes.filter(
-        (n) =>
-          n.name.toLowerCase().includes(q) ||
-          n.category.toLowerCase().includes(q)
-      );
-      const matchedIds = new Set(matched.map((n) => n.id));
-      matched.forEach((n) =>
-        getConnectedNodeIds(n.id).forEach((id) => matchedIds.add(id))
-      );
-      const vNodes = nodes.filter((n) => matchedIds.has(n.id));
+    const nodes = allNodes;
+    const nodeMap = nodesById;
+    const q = debouncedSearch.trim();
+
+    if (q) {
+      if (searchMatchIds === null) {
+        return { visibleNodes: [], visibleEdges: [] };
+      }
+      const matchedIds = new Set(searchMatchIds);
+      for (const id of searchMatchIds) {
+        for (const nbr of getConnectedNodeIds(edges, id)) {
+          matchedIds.add(nbr);
+        }
+      }
+      const vNodes = Array.from(matchedIds)
+        .map((id) => nodeMap[id])
+        .filter(Boolean) as BusinessObjectNode[];
       const nodeIdSet = new Set(vNodes.map((n) => n.id));
       const vEdges = edges.filter(
         (e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)
@@ -36,7 +233,7 @@ export default function Index() {
     }
 
     if (focusedSubset) {
-      const connectedIds = getConnectedNodeIds(focusedSubset);
+      const connectedIds = getConnectedNodeIds(edges, focusedSubset);
       const allIds = new Set([focusedSubset, ...connectedIds]);
       const vNodes = nodes.filter((n) => allIds.has(n.id));
       const nodeIdSet = new Set(vNodes.map((n) => n.id));
@@ -47,38 +244,93 @@ export default function Index() {
     }
 
     return { visibleNodes: nodes, visibleEdges: edges };
-  }, [searchQuery, focusedSubset]);
+  }, [
+    allNodes,
+    nodesById,
+    edges,
+    debouncedSearch,
+    searchMatchIds,
+    focusedSubset,
+  ]);
 
-  const handleSelectNode = useCallback((id: string) => {
-    setSelectedNodeId((prev) => {
-      setNavigationPath((path) => {
-        if (prev && prev !== id) {
-          // Clicking back to a node already in the path — truncate
-          const idx = path.indexOf(id);
-          if (idx !== -1) return path.slice(0, idx);
-          return [...path, prev];
+  useEffect(() => {
+    if (!selectedNodeId) {
+      setPanelFields([]);
+      setFieldsError(null);
+      setFieldsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFieldsLoading(true);
+    setFieldsError(null);
+    getBusinessObjectFields(selectedNodeId)
+      .then((rows) => {
+        if (!cancelled) setPanelFields(rows.map(fieldRowToField));
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setFieldsError(
+            e instanceof Error ? e.message : "Failed to load fields"
+          );
+          setPanelFields([]);
         }
-        return path;
+      })
+      .finally(() => {
+        if (!cancelled) setFieldsLoading(false);
       });
-      return id;
-    });
-    setFocusedSubset(id);
-    setSearchQuery("");
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedNodeId]);
 
-  const handleBreadcrumbNav = useCallback((id: string) => {
-    setNavigationPath((path) => {
-      const idx = path.indexOf(id);
-      return idx !== -1 ? path.slice(0, idx) : path;
-    });
-    setSelectedNodeId(id);
-    setFocusedSubset(id);
-    setSearchQuery("");
-  }, []);
+  const resolveNode = useCallback(
+    (id: string) => nodesById[id] ?? stubNode(id),
+    [nodesById]
+  );
+
+  const handleSelectNode = useCallback(
+    (id: string) => {
+      void expandAroundNode(id);
+      setSelectedNodeId((prev) => {
+        setNavigationPath((path) => {
+          if (prev && prev !== id) {
+            const idx = path.indexOf(id);
+            if (idx !== -1) return path.slice(0, idx);
+            return [...path, prev];
+          }
+          return path;
+        });
+        return id;
+      });
+      setFocusedSubset(id);
+      setSearchQuery("");
+      setDebouncedSearch("");
+      setSearchMatchIds(null);
+    },
+    [expandAroundNode]
+  );
+
+  const handleBreadcrumbNav = useCallback(
+    (id: string) => {
+      setNavigationPath((path) => {
+        const idx = path.indexOf(id);
+        return idx !== -1 ? path.slice(0, idx) : path;
+      });
+      setSelectedNodeId(id);
+      void expandAroundNode(id);
+      setFocusedSubset(id);
+      setSearchQuery("");
+      setDebouncedSearch("");
+      setSearchMatchIds(null);
+    },
+    [expandAroundNode]
+  );
 
   const handleShowAll = () => {
     setFocusedSubset(null);
     setSearchQuery("");
+    setDebouncedSearch("");
+    setSearchMatchIds(null);
   };
 
   const handleSearchChange = (value: string) => {
@@ -86,32 +338,53 @@ export default function Index() {
     if (value.trim()) setFocusedSubset(null);
   };
 
-  const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) ?? null : null;
+  const selectedNode = selectedNodeId
+    ? resolveNode(selectedNodeId)
+    : null;
+
+  const connectedForSelected = selectedNodeId
+    ? getConnectedNodeIds(edges, selectedNodeId)
+    : [];
 
   return (
     <div className="h-screen flex flex-col bg-background">
+      {(graphError || searchError) && (
+        <div
+          role="alert"
+          className="shrink-0 px-4 py-2 text-sm border-b border-destructive/30 bg-destructive/10 text-destructive"
+        >
+          {graphError && <p>{graphError}</p>}
+          {searchError && <p>{searchError}</p>}
+        </div>
+      )}
+
       <AppHeader
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         onShowAll={handleShowAll}
         nodeCount={visibleNodes.length}
+        searchLoading={searchLoading}
       />
 
       <div className="flex-1 flex min-h-0">
-        {/* Graph Canvas */}
-        <div className="flex-1 p-3">
+        <div className="flex-1 p-3 relative">
           <GraphCanvas
             nodes={visibleNodes}
             edges={visibleEdges}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleSelectNode}
+            isLoading={graphLoading}
           />
         </div>
 
-        {/* Detail Panel */}
         <div className="w-[380px] border-l border-border bg-card shrink-0 overflow-hidden">
           <DetailPanel
             node={selectedNode}
+            resolveNode={resolveNode}
+            connectedIds={connectedForSelected}
+            fields={panelFields}
+            fieldsLoading={fieldsLoading}
+            fieldsError={fieldsError}
             onSelectNode={handleSelectNode}
             navigationPath={navigationPath}
             onBreadcrumbNav={handleBreadcrumbNav}

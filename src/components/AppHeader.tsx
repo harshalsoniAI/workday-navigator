@@ -6,9 +6,16 @@ interface AppHeaderProps {
   onSearchChange: (value: string) => void;
   onShowAll: () => void;
   nodeCount: number;
+  searchLoading?: boolean;
 }
 
-export default function AppHeader({ searchQuery, onSearchChange, onShowAll, nodeCount }: AppHeaderProps) {
+export default function AppHeader({
+  searchQuery,
+  onSearchChange,
+  onShowAll,
+  nodeCount,
+  searchLoading = false,
+}: AppHeaderProps) {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center px-5 gap-4 shrink-0">
       <div className="flex items-center gap-2.5 shrink-0">
@@ -36,7 +43,8 @@ export default function AppHeader({ searchQuery, onSearchChange, onShowAll, node
           placeholder="Search Business Objects..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-9 text-sm bg-secondary/50 border-transparent focus:border-primary/20"
+          disabled={searchLoading}
+          className="pl-9 h-9 text-sm bg-secondary/50 border-transparent focus:border-primary/20 disabled:opacity-60"
         />
       </div>
 

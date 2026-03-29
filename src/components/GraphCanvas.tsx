@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { BusinessObjectNode, BusinessObjectEdge } from "@/data/mockData";
+import type {
+  BusinessObjectEdge,
+  BusinessObjectNode,
+} from "@/types/businessObject";
 
 interface GraphCanvasProps {
   nodes: BusinessObjectNode[];

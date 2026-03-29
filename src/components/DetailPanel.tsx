@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight, Home } from "lucide-react";
+import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  BusinessObjectNode,
+import type {
   BusinessObjectField,
-  getConnectedNodeIds,
-  getFieldsForObject,
-  getNodeById,
-} from "@/data/mockData";
+  BusinessObjectNode,
+} from "@/types/businessObject";
 
 interface DetailPanelProps {
   node: BusinessObjectNode | null;
+  resolveNode: (id: string) => BusinessObjectNode;
+  connectedIds: string[];
+  fields: BusinessObjectField[];
+  fieldsLoading: boolean;
+  fieldsError: string | null;
   onSelectNode: (id: string) => void;
-  isLoading?: boolean;
   navigationPath?: string[];
   onBreadcrumbNav?: (id: string) => void;
 }
@@ -40,15 +41,27 @@ function StatCard({ value, label, icon: Icon }: { value: number; label: string; 
   );
 }
 
+function StatCardSkeleton() {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-lg bg-secondary/60 p-3 w-full">
+      <Skeleton className="h-3.5 w-3.5 rounded" />
+      <Skeleton className="h-6 w-8 rounded" />
+      <Skeleton className="h-2 w-12 rounded" />
+    </div>
+  );
+}
+
 function FieldCard({
   field,
   onSelectNode,
+  resolveNode,
 }: {
   field: BusinessObjectField;
   onSelectNode: (id: string) => void;
+  resolveNode: (id: string) => BusinessObjectNode;
 }) {
   const relatedNode = field.related_business_object
-    ? getNodeById(field.related_business_object)
+    ? resolveNode(field.related_business_object)
     : null;
 
   return (
@@ -66,7 +79,7 @@ function FieldCard({
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Tag className="w-3 h-3" /> {field.category}
         </span>
-        {relatedNode && (
+        {relatedNode && field.related_business_object && (
           <button
             onClick={() => onSelectNode(field.related_business_object!)}
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
@@ -96,42 +109,29 @@ function EmptyState() {
   );
 }
 
-function LoadingState() {
-  return (
-    <div className="p-5 space-y-4">
-      <Skeleton className="h-6 w-3/4" />
-      <Skeleton className="h-4 w-full" />
-      <div className="grid grid-cols-3 gap-3 pt-2">
-        <Skeleton className="h-20 rounded-lg" />
-        <Skeleton className="h-20 rounded-lg" />
-        <Skeleton className="h-20 rounded-lg" />
-      </div>
-      <Skeleton className="h-4 w-1/3 mt-4" />
-      <div className="space-y-2">
-        <Skeleton className="h-16 rounded-lg" />
-        <Skeleton className="h-16 rounded-lg" />
-        <Skeleton className="h-16 rounded-lg" />
-      </div>
-    </div>
-  );
-}
-
-export default function DetailPanel({ node, onSelectNode, isLoading, navigationPath = [], onBreadcrumbNav }: DetailPanelProps) {
+export default function DetailPanel({
+  node,
+  resolveNode,
+  connectedIds,
+  fields,
+  fieldsLoading,
+  fieldsError,
+  onSelectNode,
+  navigationPath = [],
+  onBreadcrumbNav,
+}: DetailPanelProps) {
   const [fieldSearch, setFieldSearch] = useState("");
 
-  if (isLoading) return <LoadingState />;
   if (!node) return <EmptyState />;
 
-  const fields = getFieldsForObject(node.id);
-  const connectedIds = getConnectedNodeIds(node.id);
   const categories = [...new Set(fields.map((f) => f.category))];
   const filteredFields = fields.filter((f) =>
     f.name.toLowerCase().includes(fieldSearch.toLowerCase())
   );
 
   const breadcrumbNodes = navigationPath
-    .map((id) => getNodeById(id))
-    .filter(Boolean) as BusinessObjectNode[];
+    .map((id) => resolveNode(id))
+    .filter((n) => n);
 
   return (
     <AnimatePresence mode="wait">
@@ -143,11 +143,10 @@ export default function DetailPanel({ node, onSelectNode, isLoading, navigationP
         transition={{ duration: 0.2 }}
         className="h-full flex flex-col"
       >
-        {/* Breadcrumb */}
         {breadcrumbNodes.length > 0 && (
           <div className="px-5 pt-3 pb-1 border-b border-border">
             <div className="flex items-center gap-1 flex-wrap text-[11px]">
-              {breadcrumbNodes.map((crumb, i) => (
+              {breadcrumbNodes.map((crumb) => (
                 <span key={crumb.id} className="flex items-center gap-1">
                   <button
                     onClick={() => onBreadcrumbNav?.(crumb.id)}
@@ -166,7 +165,6 @@ export default function DetailPanel({ node, onSelectNode, isLoading, navigationP
           </div>
         )}
 
-        {/* Header */}
         <div className="p-5 border-b border-border">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
@@ -182,22 +180,38 @@ export default function DetailPanel({ node, onSelectNode, isLoading, navigationP
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-2 p-5 border-b border-border">
-          <StatCard value={fields.length} label="Fields" icon={Hash} />
-          <StatCard value={connectedIds.length} label="Connected" icon={Network} />
-          <StatCard value={categories.length} label="Categories" icon={Layers} />
+          {fieldsLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard value={fields.length} label="Fields" icon={Hash} />
+              <StatCard value={connectedIds.length} label="Connected" icon={Network} />
+              <StatCard value={categories.length} label="Categories" icon={Layers} />
+            </>
+          )}
         </div>
 
-        {/* Connected Objects */}
+        {fieldsError && (
+          <div
+            role="alert"
+            className="mx-5 mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            {fieldsError}
+          </div>
+        )}
+
         <div className="p-5 border-b border-border">
           <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
             <Link2 className="w-3 h-3" /> Connected Objects
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {connectedIds.map((id) => {
-              const connected = getNodeById(id);
-              if (!connected) return null;
+              const connected = resolveNode(id);
               return (
                 <button
                   key={id}
@@ -212,7 +226,6 @@ export default function DetailPanel({ node, onSelectNode, isLoading, navigationP
           </div>
         </div>
 
-        {/* Field search */}
         <div className="p-5 pb-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -220,28 +233,41 @@ export default function DetailPanel({ node, onSelectNode, isLoading, navigationP
               placeholder="Search fields..."
               value={fieldSearch}
               onChange={(e) => setFieldSearch(e.target.value)}
-              className="pl-9 h-9 text-sm bg-secondary/50 border-transparent focus:border-primary/20"
+              disabled={fieldsLoading}
+              className="pl-9 h-9 text-sm bg-secondary/50 border-transparent focus:border-primary/20 disabled:opacity-60"
             />
           </div>
         </div>
 
-        {/* Fields list */}
         <ScrollArea className="flex-1 px-5 pb-5">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="space-y-2"
-          >
-            {filteredFields.map((field) => (
-              <FieldCard key={field.id} field={field} onSelectNode={onSelectNode} />
-            ))}
-            {filteredFields.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-xs text-muted-foreground">No fields match your search.</p>
-              </div>
-            )}
-          </motion.div>
+          {fieldsLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-16 rounded-lg" />
+            </div>
+          ) : (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="space-y-2"
+            >
+              {filteredFields.map((field) => (
+                <FieldCard
+                  key={field.id}
+                  field={field}
+                  onSelectNode={onSelectNode}
+                  resolveNode={resolveNode}
+                />
+              ))}
+              {filteredFields.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-xs text-muted-foreground">No fields match your search.</p>
+                </div>
+              )}
+            </motion.div>
+          )}
         </ScrollArea>
       </motion.div>
     </AnimatePresence>
