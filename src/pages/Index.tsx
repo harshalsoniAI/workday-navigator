@@ -377,7 +377,7 @@ export default function Index() {
           />
         </div>
 
-        <div className="w-[380px] border-l border-border bg-card shrink-0 overflow-hidden">
+        <div className="w-[380px] border-l border-border bg-card shrink-0 overflow-y-auto">
           <DetailPanel
             node={selectedNode}
             resolveNode={resolveNode}
