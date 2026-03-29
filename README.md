@@ -1,3 +1,5 @@
-# Welcome to your Lovable project
+# Welcome to the Workday Navigator project by myWeekend.ca
 
-TODO: Document your project here
+You can start with one of the Business Object Nodes and you can traverse between different Business Objects. You can also see the fields that are associated with the Business Object.
+
+This is a sample data and not inclusive of all the Workday Business Objects.
