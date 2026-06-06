@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import GraphCanvas, { type GraphCanvasHandle } from "@/components/GraphCanvas";
 import DetailPanel from "@/components/DetailPanel";
 import AppHeader, { type PanelMode } from "@/components/AppHeader";
 import PathFinderPanel from "@/components/PathFinderPanel";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   edgeRowToEdge,
   fieldRowToField,
@@ -82,7 +84,9 @@ export default function Index() {
 
   const [panelMode, setPanelMode] = useState<PanelMode>("explorer");
   const [highlightPath, setHighlightPath] = useState<string[] | undefined>();
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const graphCanvasRef = useRef<GraphCanvasHandle>(null);
+  const sidePanelRef = useRef<import("react-resizable-panels").ImperativePanelHandle>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 320);
@@ -393,20 +397,53 @@ export default function Index() {
         onFitToScreen={() => graphCanvasRef.current?.fitToScreen()}
       />
 
-      <div className="flex-1 flex min-h-0">
-        <div className="flex-1 p-3 relative">
-          <GraphCanvas
-            ref={graphCanvasRef}
-            nodes={visibleNodes}
-            edges={visibleEdges}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={handleSelectNode}
-            isLoading={graphLoading}
-            highlightPath={highlightPath}
-          />
-        </div>
+      <PanelGroup direction="horizontal" className="flex-1 min-h-0">
+        {/* Graph canvas */}
+        <Panel defaultSize={70} minSize={30}>
+          <div className="h-full p-3 relative">
+            <GraphCanvas
+              ref={graphCanvasRef}
+              nodes={visibleNodes}
+              edges={visibleEdges}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={handleSelectNode}
+              isLoading={graphLoading}
+              highlightPath={highlightPath}
+            />
+          </div>
+        </Panel>
 
-        <div className="w-[380px] border-l border-border bg-card shrink-0 overflow-y-auto">
+        {/* Drag handle + collapse toggle */}
+        <PanelResizeHandle className="relative flex items-center justify-center w-1.5 bg-border hover:bg-primary/40 transition-colors group">
+          <button
+            onClick={() => {
+              if (panelCollapsed) {
+                sidePanelRef.current?.expand();
+              } else {
+                sidePanelRef.current?.collapse();
+              }
+            }}
+            className="absolute z-10 flex items-center justify-center w-5 h-10 rounded-full bg-card border border-border shadow-sm text-muted-foreground hover:text-primary hover:border-primary transition-all opacity-0 group-hover:opacity-100"
+          >
+            {panelCollapsed
+              ? <ChevronLeft className="w-3 h-3" />
+              : <ChevronRight className="w-3 h-3" />
+            }
+          </button>
+        </PanelResizeHandle>
+
+        {/* Side panel */}
+        <Panel
+          ref={sidePanelRef}
+          defaultSize={30}
+          minSize={15}
+          maxSize={60}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setPanelCollapsed(true)}
+          onExpand={() => setPanelCollapsed(false)}
+          className="border-l border-border bg-card overflow-y-auto"
+        >
           {panelMode === "pathfinder" ? (
             <PathFinderPanel
               nodesById={nodesById}
@@ -427,8 +464,8 @@ export default function Index() {
               onBreadcrumbNav={handleBreadcrumbNav}
             />
           )}
-        </div>
-      </div>
+        </Panel>
+      </PanelGroup>
     </div>
   );
 }
