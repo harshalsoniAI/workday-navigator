@@ -234,7 +234,7 @@ export default function DetailPanel({
           <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
             <Link2 className="w-3 h-3" /> Connected Objects
           </h3>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto pr-1">
             {connectedIds.map((id) => {
               const connected = resolveNode(id);
               return (
