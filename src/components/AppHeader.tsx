@@ -69,9 +69,9 @@ export default function AppHeader({
         </div>
         <div>
           <h1 className="text-sm font-semibold text-foreground tracking-tight leading-none">
-            Business Object Explorer
+            Workday Business Object Explorer
           </h1>
-          <p className="text-[10px] text-muted-foreground mt-0.5">Workday</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">by Harshal Soni</p>
         </div>
       </div>
 
