@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight, ExternalLink } from "lucide-react";
+import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight, ExternalLink, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -121,13 +121,27 @@ export default function DetailPanel({
   onBreadcrumbNav,
 }: DetailPanelProps) {
   const [fieldSearch, setFieldSearch] = useState("");
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());
 
   if (!node) return <EmptyState />;
 
   const categories = [...new Set(fields.map((f) => f.category))];
-  const filteredFields = fields.filter((f) =>
-    f.name.toLowerCase().includes(fieldSearch.toLowerCase())
-  );
+  const fieldTypes = [...new Set(fields.map((f) => f.report_field_type))].filter(Boolean).sort();
+
+  const filteredFields = fields.filter((f) => {
+    const matchesSearch = f.name.toLowerCase().includes(fieldSearch.toLowerCase());
+    const matchesType = activeTypes.size === 0 || activeTypes.has(f.report_field_type);
+    return matchesSearch && matchesType;
+  });
+
+  const toggleType = (type: string) => {
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
 
   const breadcrumbNodes = navigationPath
     .map((id) => resolveNode(id))
@@ -174,7 +188,7 @@ export default function DetailPanel({
               <div className="flex items-start justify-between gap-2">
                 <h2 className="text-base font-semibold text-foreground leading-tight">{node.name}</h2>
                 <a
-                  href={`https://community.workday.com/search#q=${encodeURIComponent(node.name + ' business object')}&t=All`}
+                  href={`https://community.workday.com/search#q=${encodeURIComponent(node.name + " business object")}&t=All`}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Search Workday Community docs"
@@ -237,7 +251,7 @@ export default function DetailPanel({
           </div>
         </div>
 
-        <div className="p-5 pb-3">
+        <div className="p-5 pb-2 space-y-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
@@ -248,6 +262,33 @@ export default function DetailPanel({
               className="pl-9 h-9 text-sm bg-secondary/50 border-transparent focus:border-primary/20 disabled:opacity-60"
             />
           </div>
+
+          {!fieldsLoading && fieldTypes.length > 1 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Filter className="w-3 h-3 text-muted-foreground shrink-0" />
+              {fieldTypes.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => toggleType(type)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-colors ${
+                    activeTypes.has(type)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-secondary text-secondary-foreground border-transparent hover:border-primary/30"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+              {activeTypes.size > 0 && (
+                <button
+                  onClick={() => setActiveTypes(new Set())}
+                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <ScrollArea className="flex-1 px-5 pb-5">
@@ -274,7 +315,7 @@ export default function DetailPanel({
               ))}
               {filteredFields.length === 0 && (
                 <div className="text-center py-8">
-                  <p className="text-xs text-muted-foreground">No fields match your search.</p>
+                  <p className="text-xs text-muted-foreground">No fields match your filter.</p>
                 </div>
               )}
             </motion.div>

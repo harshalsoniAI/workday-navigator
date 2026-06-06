@@ -1,10 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
 
 @layer base {
   :root {
@@ -58,9 +56,57 @@ All colors MUST be HSL.
     --sidebar-border: 220 16% 90%;
     --sidebar-ring: 234 89% 60%;
   }
-}
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  .dark {
+    --background: 224 30% 10%;
+    --foreground: 220 20% 90%;
+
+    --card: 224 25% 13%;
+    --card-foreground: 220 20% 90%;
+
+    --popover: 224 25% 13%;
+    --popover-foreground: 220 20% 90%;
+
+    --primary: 234 89% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 224 20% 18%;
+    --secondary-foreground: 220 20% 80%;
+
+    --muted: 224 20% 18%;
+    --muted-foreground: 220 12% 55%;
+
+    --accent: 234 60% 20%;
+    --accent-foreground: 234 89% 75%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 224 20% 22%;
+    --input: 224 20% 22%;
+    --ring: 234 89% 65%;
+
+    --graph-node: 234 89% 65%;
+    --graph-node-selected: 234 89% 55%;
+    --graph-edge: 224 20% 30%;
+    --graph-canvas: 224 30% 8%;
+
+    --node-hcm: 234 89% 65%;
+    --node-payroll: 160 70% 48%;
+    --node-benefits: 280 65% 62%;
+    --node-finance: 35 90% 56%;
+    --node-time: 190 70% 52%;
+
+    --sidebar-background: 224 25% 13%;
+    --sidebar-foreground: 220 20% 90%;
+    --sidebar-primary: 234 89% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 234 60% 20%;
+    --sidebar-accent-foreground: 234 89% 75%;
+    --sidebar-border: 224 20% 22%;
+    --sidebar-ring: 234 89% 65%;
+  }
+}
 
 html {
   font-family: 'Inter', sans-serif;

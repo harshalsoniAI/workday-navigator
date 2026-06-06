@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import GraphCanvas, { type GraphCanvasHandle } from "@/components/GraphCanvas";
 import DetailPanel from "@/components/DetailPanel";
@@ -25,6 +27,8 @@ import type {
   BusinessObjectField,
   BusinessObjectNode,
 } from "@/types/businessObject";
+import { useBookmarks } from "@/hooks/useBookmarks";
+import FieldSearchDialog from "@/components/FieldSearchDialog";
 
 const INITIAL_NODE_LIMIT = 10;
 
@@ -37,9 +41,7 @@ function mergeTouchingEdges(
   rows: BusinessObjectEdgeRow[]
 ): BusinessObjectEdge[] {
   const map = new Map<string, BusinessObjectEdge>();
-  for (const e of prev) {
-    map.set(edgeKey(e.source, e.target), e);
-  }
+  for (const e of prev) map.set(edgeKey(e.source, e.target), e);
   rows.forEach((r, i) => {
     const e = edgeRowToEdge(r, i);
     const k = edgeKey(e.source, e.target);
@@ -61,9 +63,11 @@ function ensureStubsForEdges(
 }
 
 export default function Index() {
-  const [nodesById, setNodesById] = useState<Record<string, BusinessObjectNode>>(
-    {}
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+
+  const [nodesById, setNodesById] = useState<Record<string, BusinessObjectNode>>({});
   const [edges, setEdges] = useState<BusinessObjectEdge[]>([]);
   const [graphLoading, setGraphLoading] = useState(true);
   const [graphError, setGraphError] = useState<string | null>(null);
@@ -88,11 +92,20 @@ export default function Index() {
   const graphCanvasRef = useRef<GraphCanvasHandle>(null);
   const sidePanelRef = useRef<import("react-resizable-panels").ImperativePanelHandle>(null);
 
+  const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
+
+  const [fieldSearchOpen, setFieldSearchOpen] = useState(false);
+
+  // Tracks which node IDs have had edges fetched (avoids redundant lazy fetches)
+  const expandedNodesRef = useRef(new Set<string>());
+
+  // Debounce search
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 320);
     return () => window.clearTimeout(t);
   }, [searchQuery]);
 
+  // Initial load
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -119,22 +132,30 @@ export default function Index() {
         const withStubs = ensureStubsForEdges(nextNodes, edgeList);
         setNodesById(withStubs);
         setEdges(edgeList);
-        setFocusedSubset(seedNames[0]);
+        // Mark seeds as expanded so lazy loader skips them
+        seedNames.forEach((n) => expandedNodesRef.current.add(n));
+
+        // Read ?node= from URL on initial load
+        const nodeParam = searchParams.get("node");
+        if (nodeParam) {
+          setFocusedSubset(nodeParam);
+          setSelectedNodeId(nodeParam);
+        } else {
+          setFocusedSubset(seedNames[0]);
+        }
       } catch (e) {
         if (!cancelled) {
-          setGraphError(
-            e instanceof Error ? e.message : "Failed to load business objects"
-          );
+          setGraphError(e instanceof Error ? e.message : "Failed to load business objects");
         }
       } finally {
         if (!cancelled) setGraphLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Search
   useEffect(() => {
     const q = debouncedSearch.trim();
     if (!q) {
@@ -147,13 +168,17 @@ export default function Index() {
     (async () => {
       setSearchLoading(true);
       setSearchError(null);
-      setSearchMatchIds(null);
+      // Instant local pre-filter while waiting for Supabase
+      const localIds = Object.values(nodesById)
+        .filter((n) => n.name.toLowerCase().includes(q.toLowerCase()) || n.id.toLowerCase().includes(q.toLowerCase()))
+        .map((n) => n.id);
+      if (localIds.length > 0) setSearchMatchIds(localIds);
+
       try {
         const rows = await searchBusinessObjects(q);
         if (cancelled) return;
         const ids = rows.map((r) => r.business_object_name);
         setSearchMatchIds(ids);
-
         setNodesById((prev) => {
           const next = { ...prev };
           for (const r of rows) {
@@ -162,7 +187,6 @@ export default function Index() {
           }
           return next;
         });
-
         if (ids.length) {
           const edgeRows = await getBusinessObjectEdgesTouching(ids);
           if (cancelled) return;
@@ -174,47 +198,64 @@ export default function Index() {
         }
       } catch (e) {
         if (!cancelled) {
-          setSearchError(
-            e instanceof Error ? e.message : "Search failed"
-          );
+          setSearchError(e instanceof Error ? e.message : "Search failed");
           setSearchMatchIds([]);
         }
       } finally {
         if (!cancelled) setSearchLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   const expandAroundNode = useCallback(async (nodeId: string) => {
+    expandedNodesRef.current.add(nodeId);
     setGraphError(null);
     try {
       const edgeRows = await getBusinessObjectEdgesTouching([nodeId]);
-
       setEdges((prev) => {
         const next = mergeTouchingEdges(prev, edgeRows);
         setNodesById((p) => ensureStubsForEdges(p, next));
         return next;
       });
-
       const rows = await getBusinessObjectNodesByNames([nodeId]);
       if (rows[0]) {
         const n = nodeRowToNode(rows[0]);
         setNodesById((prev) => ({ ...prev, [n.id]: n }));
       }
     } catch (e) {
-      setGraphError(
-        e instanceof Error ? e.message : "Failed to expand graph"
-      );
+      setGraphError(e instanceof Error ? e.message : "Failed to expand graph");
     }
   }, []);
 
-  const allNodes = useMemo(
-    () => Object.values(nodesById),
+  // Called by GraphCanvas every ~90 frames with currently visible node IDs.
+  // Batch-fetches edges for stub nodes that haven't been expanded yet.
+  const handleNodesEnterViewport = useCallback(
+    (ids: string[]) => {
+      const toExpand = ids.filter((id) => {
+        const node = nodesById[id];
+        return node?.isStub && !expandedNodesRef.current.has(id);
+      });
+      if (toExpand.length === 0) return;
+      // Mark immediately so concurrent calls don't double-fetch
+      toExpand.forEach((id) => expandedNodesRef.current.add(id));
+      // Batch: fetch edges for up to 6 stubs at once
+      const batch = toExpand.slice(0, 6);
+      getBusinessObjectEdgesTouching(batch)
+        .then((edgeRows) => {
+          setEdges((prev) => {
+            const next = mergeTouchingEdges(prev, edgeRows);
+            setNodesById((p) => ensureStubsForEdges(p, next));
+            return next;
+          });
+        })
+        .catch(console.error);
+    },
     [nodesById]
   );
+
+  const allNodes = useMemo(() => Object.values(nodesById), [nodesById]);
 
   const { visibleNodes, visibleEdges } = useMemo(() => {
     const nodes = allNodes;
@@ -223,22 +264,35 @@ export default function Index() {
 
     if (q) {
       if (searchMatchIds === null) {
-        return { visibleNodes: [], visibleEdges: [] };
+        // While searching: show local filter as instant feedback
+        const localMatches = new Set(
+          nodes
+            .filter((n) =>
+              n.name.toLowerCase().includes(q.toLowerCase()) ||
+              n.id.toLowerCase().includes(q.toLowerCase())
+            )
+            .map((n) => n.id)
+        );
+        for (const id of Array.from(localMatches)) {
+          for (const nbr of getConnectedNodeIds(edges, id)) localMatches.add(nbr);
+        }
+        const vNodes = Array.from(localMatches).map((id) => nodeMap[id]).filter(Boolean) as BusinessObjectNode[];
+        const idSet = new Set(vNodes.map((n) => n.id));
+        return {
+          visibleNodes: vNodes,
+          visibleEdges: edges.filter((e) => idSet.has(e.source) && idSet.has(e.target)),
+        };
       }
       const matchedIds = new Set(searchMatchIds);
       for (const id of searchMatchIds) {
-        for (const nbr of getConnectedNodeIds(edges, id)) {
-          matchedIds.add(nbr);
-        }
+        for (const nbr of getConnectedNodeIds(edges, id)) matchedIds.add(nbr);
       }
-      const vNodes = Array.from(matchedIds)
-        .map((id) => nodeMap[id])
-        .filter(Boolean) as BusinessObjectNode[];
+      const vNodes = Array.from(matchedIds).map((id) => nodeMap[id]).filter(Boolean) as BusinessObjectNode[];
       const nodeIdSet = new Set(vNodes.map((n) => n.id));
-      const vEdges = edges.filter(
-        (e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)
-      );
-      return { visibleNodes: vNodes, visibleEdges: vEdges };
+      return {
+        visibleNodes: vNodes,
+        visibleEdges: edges.filter((e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)),
+      };
     }
 
     if (focusedSubset) {
@@ -246,22 +300,16 @@ export default function Index() {
       const allIds = new Set([focusedSubset, ...connectedIds]);
       const vNodes = nodes.filter((n) => allIds.has(n.id));
       const nodeIdSet = new Set(vNodes.map((n) => n.id));
-      const vEdges = edges.filter(
-        (e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)
-      );
-      return { visibleNodes: vNodes, visibleEdges: vEdges };
+      return {
+        visibleNodes: vNodes,
+        visibleEdges: edges.filter((e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)),
+      };
     }
 
     return { visibleNodes: nodes, visibleEdges: edges };
-  }, [
-    allNodes,
-    nodesById,
-    edges,
-    debouncedSearch,
-    searchMatchIds,
-    focusedSubset,
-  ]);
+  }, [allNodes, nodesById, edges, debouncedSearch, searchMatchIds, focusedSubset]);
 
+  // Load fields when node selected
   useEffect(() => {
     if (!selectedNodeId) {
       setPanelFields([]);
@@ -273,24 +321,27 @@ export default function Index() {
     setFieldsLoading(true);
     setFieldsError(null);
     getBusinessObjectFields(selectedNodeId)
-      .then((rows) => {
-        if (!cancelled) setPanelFields(rows.map(fieldRowToField));
-      })
+      .then((rows) => { if (!cancelled) setPanelFields(rows.map(fieldRowToField)); })
       .catch((e) => {
         if (!cancelled) {
-          setFieldsError(
-            e instanceof Error ? e.message : "Failed to load fields"
-          );
+          setFieldsError(e instanceof Error ? e.message : "Failed to load fields");
           setPanelFields([]);
         }
       })
-      .finally(() => {
-        if (!cancelled) setFieldsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .finally(() => { if (!cancelled) setFieldsLoading(false); });
+    return () => { cancelled = true; };
   }, [selectedNodeId]);
+
+  // Sync selected node to URL
+  useEffect(() => {
+    if (selectedNodeId) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("node", selectedNodeId);
+        return next;
+      }, { replace: true });
+    }
+  }, [selectedNodeId, setSearchParams]);
 
   const resolveNode = useCallback(
     (id: string) => nodesById[id] ?? stubNode(id),
@@ -343,18 +394,19 @@ export default function Index() {
     setHighlightPath(undefined);
   };
 
-  const handlePathFound = useCallback((pathIds: string[]) => {
-    setHighlightPath(pathIds);
-    // Ensure all path nodes are visible on the graph
-    setFocusedSubset(null);
-    setSearchQuery("");
-    setDebouncedSearch("");
-    setSearchMatchIds(null);
-    // Load edges for all path nodes so they appear
-    pathIds.forEach(id => {
-      if (!nodesById[id]) void expandAroundNode(id);
-    });
-  }, [nodesById, expandAroundNode]);
+  const handlePathFound = useCallback(
+    (pathIds: string[]) => {
+      setHighlightPath(pathIds);
+      setFocusedSubset(null);
+      setSearchQuery("");
+      setDebouncedSearch("");
+      setSearchMatchIds(null);
+      pathIds.forEach((id) => {
+        if (!nodesById[id]) void expandAroundNode(id);
+      });
+    },
+    [nodesById, expandAroundNode]
+  );
 
   const handlePanelModeChange = useCallback((mode: PanelMode) => {
     setPanelMode(mode);
@@ -366,13 +418,37 @@ export default function Index() {
     if (value.trim()) setFocusedSubset(null);
   };
 
-  const selectedNode = selectedNodeId
-    ? resolveNode(selectedNodeId)
-    : null;
+  const handleExportCSV = useCallback(() => {
+    const header = "Name,ID,Category,Description";
+    const rows = visibleNodes.map((n) =>
+      `"${n.name.replace(/"/g, '""')}","${n.id.replace(/"/g, '""')}","${n.category.replace(/"/g, '""')}","${n.description.replace(/"/g, '""')}"`
+    );
+    const edgeHeader = "\n\nSource,Target,Relationship";
+    const edgeRows = visibleEdges.map((e) =>
+      `"${e.source.replace(/"/g, '""')}","${e.target.replace(/"/g, '""')}","${e.relationship.replace(/"/g, '""')}"`
+    );
+    const csv = [header, ...rows, edgeHeader, ...edgeRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "workday-navigator.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [visibleNodes, visibleEdges]);
 
-  const connectedForSelected = selectedNodeId
-    ? getConnectedNodeIds(edges, selectedNodeId)
-    : [];
+  const handleToggleBookmark = useCallback(() => {
+    if (!selectedNodeId) return;
+    const node = resolveNode(selectedNodeId);
+    if (isBookmarked(selectedNodeId)) {
+      removeBookmark(selectedNodeId);
+    } else {
+      addBookmark({ id: selectedNodeId, name: node.name });
+    }
+  }, [selectedNodeId, resolveNode, isBookmarked, addBookmark, removeBookmark]);
+
+  const selectedNode = selectedNodeId ? resolveNode(selectedNodeId) : null;
+  const connectedForSelected = selectedNodeId ? getConnectedNodeIds(edges, selectedNodeId) : [];
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -395,10 +471,19 @@ export default function Index() {
         panelMode={panelMode}
         onPanelModeChange={handlePanelModeChange}
         onFitToScreen={() => graphCanvasRef.current?.fitToScreen()}
+        isDark={isDark}
+        onToggleTheme={() => setTheme(isDark ? "light" : "dark")}
+        onExportPNG={() => graphCanvasRef.current?.exportPNG()}
+        onExportCSV={handleExportCSV}
+        bookmarks={bookmarks}
+        isCurrentNodeBookmarked={selectedNodeId ? isBookmarked(selectedNodeId) : false}
+        onToggleBookmark={handleToggleBookmark}
+        onSelectBookmark={handleSelectNode}
+        onRemoveBookmark={removeBookmark}
+        onOpenFieldSearch={() => setFieldSearchOpen(true)}
       />
 
       <PanelGroup direction="horizontal" className="flex-1 min-h-0">
-        {/* Graph canvas */}
         <Panel defaultSize={70} minSize={30}>
           <div className="h-full p-3 relative">
             <GraphCanvas
@@ -409,11 +494,12 @@ export default function Index() {
               onSelectNode={handleSelectNode}
               isLoading={graphLoading}
               highlightPath={highlightPath}
+              isDark={isDark}
+              onNodesEnterViewport={handleNodesEnterViewport}
             />
           </div>
         </Panel>
 
-        {/* Drag handle + collapse toggle */}
         <PanelResizeHandle className="relative flex items-center justify-center w-1.5 bg-border hover:bg-primary/40 transition-colors group">
           <button
             onClick={() => {
@@ -432,7 +518,6 @@ export default function Index() {
           </button>
         </PanelResizeHandle>
 
-        {/* Side panel */}
         <Panel
           ref={sidePanelRef}
           defaultSize={30}
@@ -466,6 +551,12 @@ export default function Index() {
           )}
         </Panel>
       </PanelGroup>
+
+      <FieldSearchDialog
+        open={fieldSearchOpen}
+        onClose={() => setFieldSearchOpen(false)}
+        onSelectObject={handleSelectNode}
+      />
     </div>
   );
 }

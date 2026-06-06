@@ -107,3 +107,25 @@ export async function searchBusinessObjects(
   if (error) throw error
   return (data || []) as BusinessObjectNodeRow[]
 }
+
+export type FieldSearchRow = {
+  business_object_name: string
+  field: string
+  report_field_type: string | null
+  category: string | null
+}
+
+export async function searchFields(
+  searchTerm: string,
+  limit = 30
+): Promise<FieldSearchRow[]> {
+  const { data, error } = await supabase
+    .from('business_object_fields')
+    .select('business_object_name, field, report_field_type, category')
+    .ilike('field', `%${searchTerm}%`)
+    .order('field', { ascending: true })
+    .limit(limit)
+
+  if (error) throw error
+  return (data || []) as FieldSearchRow[]
+}
