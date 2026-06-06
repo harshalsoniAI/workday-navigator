@@ -1,5 +1,9 @@
-import { Search } from "lucide-react";
+import { Search, Route, Maximize2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+export type PanelMode = "explorer" | "pathfinder";
 
 interface AppHeaderProps {
   searchQuery: string;
@@ -7,6 +11,9 @@ interface AppHeaderProps {
   onShowAll: () => void;
   nodeCount: number;
   searchLoading?: boolean;
+  panelMode: PanelMode;
+  onPanelModeChange: (mode: PanelMode) => void;
+  onFitToScreen: () => void;
 }
 
 export default function AppHeader({
@@ -15,6 +22,9 @@ export default function AppHeader({
   onShowAll,
   nodeCount,
   searchLoading = false,
+  panelMode,
+  onPanelModeChange,
+  onFitToScreen,
 }: AppHeaderProps) {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center px-5 gap-4 shrink-0">
@@ -43,13 +53,13 @@ export default function AppHeader({
           placeholder="Search Business Objects..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          disabled={searchLoading}
+          disabled={searchLoading || panelMode === "pathfinder"}
           className="pl-9 h-9 text-sm bg-secondary/50 border-transparent focus:border-primary/20 disabled:opacity-60"
         />
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground hidden sm:block">
           {nodeCount} object{nodeCount !== 1 ? "s" : ""}
         </span>
         <button
@@ -58,6 +68,43 @@ export default function AppHeader({
         >
           Show All
         </button>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        {/* Fit to screen */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onFitToScreen}>
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Fit to screen</TooltipContent>
+        </Tooltip>
+
+        {/* Mode toggle */}
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          <button
+            onClick={() => onPanelModeChange("explorer")}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              panelMode === "explorer"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            Explorer
+          </button>
+          <button
+            onClick={() => onPanelModeChange("pathfinder")}
+            className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
+              panelMode === "pathfinder"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Route className="w-3 h-3" />
+            Path Finder
+          </button>
+        </div>
       </div>
     </header>
   );

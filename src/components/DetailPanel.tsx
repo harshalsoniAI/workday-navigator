@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight } from "lucide-react";
+import { Search, Database, Link2, Tag, ArrowRight, Layers, Hash, Network, ChevronRight, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -170,8 +170,19 @@ export default function DetailPanel({
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
               <Layers className="w-5 h-5 text-primary-foreground" />
             </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-foreground leading-tight">{node.name}</h2>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-base font-semibold text-foreground leading-tight">{node.name}</h2>
+                <a
+                  href={`https://community.workday.com/search#q=${encodeURIComponent(node.name + ' business object')}&t=All`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Search Workday Community docs"
+                  className="shrink-0 text-muted-foreground hover:text-primary transition-colors mt-0.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{node.description}</p>
               <span className="inline-block mt-2 rounded-md bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground uppercase tracking-wider">
                 {node.category}

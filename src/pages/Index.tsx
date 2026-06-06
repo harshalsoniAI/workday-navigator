@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import GraphCanvas from "@/components/GraphCanvas";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import GraphCanvas, { type GraphCanvasHandle } from "@/components/GraphCanvas";
 import DetailPanel from "@/components/DetailPanel";
-import AppHeader from "@/components/AppHeader";
+import AppHeader, { type PanelMode } from "@/components/AppHeader";
+import PathFinderPanel from "@/components/PathFinderPanel";
 import {
   edgeRowToEdge,
   fieldRowToField,
@@ -78,6 +79,10 @@ export default function Index() {
   const [panelFields, setPanelFields] = useState<BusinessObjectField[]>([]);
   const [fieldsLoading, setFieldsLoading] = useState(false);
   const [fieldsError, setFieldsError] = useState<string | null>(null);
+
+  const [panelMode, setPanelMode] = useState<PanelMode>("explorer");
+  const [highlightPath, setHighlightPath] = useState<string[] | undefined>();
+  const graphCanvasRef = useRef<GraphCanvasHandle>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchQuery), 320);
@@ -331,7 +336,26 @@ export default function Index() {
     setSearchQuery("");
     setDebouncedSearch("");
     setSearchMatchIds(null);
+    setHighlightPath(undefined);
   };
+
+  const handlePathFound = useCallback((pathIds: string[]) => {
+    setHighlightPath(pathIds);
+    // Ensure all path nodes are visible on the graph
+    setFocusedSubset(null);
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setSearchMatchIds(null);
+    // Load edges for all path nodes so they appear
+    pathIds.forEach(id => {
+      if (!nodesById[id]) void expandAroundNode(id);
+    });
+  }, [nodesById, expandAroundNode]);
+
+  const handlePanelModeChange = useCallback((mode: PanelMode) => {
+    setPanelMode(mode);
+    if (mode === "explorer") setHighlightPath(undefined);
+  }, []);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -364,31 +388,45 @@ export default function Index() {
         onShowAll={handleShowAll}
         nodeCount={visibleNodes.length}
         searchLoading={searchLoading}
+        panelMode={panelMode}
+        onPanelModeChange={handlePanelModeChange}
+        onFitToScreen={() => graphCanvasRef.current?.fitToScreen()}
       />
 
       <div className="flex-1 flex min-h-0">
         <div className="flex-1 p-3 relative">
           <GraphCanvas
+            ref={graphCanvasRef}
             nodes={visibleNodes}
             edges={visibleEdges}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleSelectNode}
             isLoading={graphLoading}
+            highlightPath={highlightPath}
           />
         </div>
 
         <div className="w-[380px] border-l border-border bg-card shrink-0 overflow-y-auto">
-          <DetailPanel
-            node={selectedNode}
-            resolveNode={resolveNode}
-            connectedIds={connectedForSelected}
-            fields={panelFields}
-            fieldsLoading={fieldsLoading}
-            fieldsError={fieldsError}
-            onSelectNode={handleSelectNode}
-            navigationPath={navigationPath}
-            onBreadcrumbNav={handleBreadcrumbNav}
-          />
+          {panelMode === "pathfinder" ? (
+            <PathFinderPanel
+              nodesById={nodesById}
+              edges={edges}
+              onSelectNode={handleSelectNode}
+              onPathFound={handlePathFound}
+            />
+          ) : (
+            <DetailPanel
+              node={selectedNode}
+              resolveNode={resolveNode}
+              connectedIds={connectedForSelected}
+              fields={panelFields}
+              fieldsLoading={fieldsLoading}
+              fieldsError={fieldsError}
+              onSelectNode={handleSelectNode}
+              navigationPath={navigationPath}
+              onBreadcrumbNav={handleBreadcrumbNav}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -1,8 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type {
   BusinessObjectEdge,
   BusinessObjectNode,
 } from "@/types/businessObject";
+import { getPathEdgeKeys } from "@/lib/pathFinder";
+
+export interface GraphCanvasHandle {
+  fitToScreen(): void;
+}
 
 interface GraphCanvasProps {
   nodes: BusinessObjectNode[];
@@ -10,6 +15,8 @@ interface GraphCanvasProps {
   selectedNodeId: string | null;
   onSelectNode: (id: string) => void;
   isLoading?: boolean;
+  /** Ordered list of node IDs forming the highlighted path. */
+  highlightPath?: string[];
 }
 
 interface LayoutNode {
@@ -38,13 +45,14 @@ function getCategoryColors(category: string) {
 const BASE_RADIUS = 50;
 const SELECTED_RADIUS = 58;
 
-export default function GraphCanvas({
+const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(function GraphCanvas({
   nodes,
   edges,
   selectedNodeId,
   onSelectNode,
   isLoading,
-}: GraphCanvasProps) {
+  highlightPath,
+}, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef<LayoutNode[]>([]);
   const animRef = useRef<number>(0);
@@ -56,6 +64,28 @@ export default function GraphCanvas({
   const scaleRef = useRef(1);
   const sizeRef = useRef({ w: 800, h: 600 });
   const hoveredRef = useRef<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    fitToScreen() {
+      const layout = layoutRef.current;
+      if (!layout.length) return;
+      const xs = layout.map(n => n.x);
+      const ys = layout.map(n => n.y);
+      const pad = 80;
+      const minX = Math.min(...xs) - pad;
+      const maxX = Math.max(...xs) + pad;
+      const minY = Math.min(...ys) - pad;
+      const maxY = Math.max(...ys) + pad;
+      const { w, h } = sizeRef.current;
+      const scaleX = w / (maxX - minX);
+      const scaleY = h / (maxY - minY);
+      const newScale = Math.min(scaleX, scaleY, 2) * 0.9;
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+      scaleRef.current = newScale;
+      panRef.current = { x: w / 2 - cx * newScale, y: h / 2 - cy * newScale };
+    },
+  }));
 
   // Initialize layout when nodes change
   useEffect(() => {
@@ -179,6 +209,10 @@ export default function GraphCanvas({
     sizeRef.current = { w, h };
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+    const pathNodeSet = new Set(highlightPath ?? []);
+    const pathEdgeKeys = highlightPath ? getPathEdgeKeys(highlightPath) : new Set<string>();
+    const hasPath = pathNodeSet.size > 0;
+
     // Background
     ctx.fillStyle = "hsl(220, 20%, 98.5%)";
     ctx.fillRect(0, 0, w, h);
@@ -229,36 +263,49 @@ export default function GraphCanvas({
       const a = getLayoutNode(e.source);
       const b = getLayoutNode(e.target);
       if (!a || !b) return;
+
+      const isOnPath = pathEdgeKeys.has(`${e.source}|${e.target}`);
       const isHighlighted =
+        !hasPath &&
         selectedNodeId &&
         (e.source === selectedNodeId || e.target === selectedNodeId);
+
+      const dimEdge = (hasPath && !isOnPath) || (!hasPath && selectedNodeId && !isHighlighted);
+
+      ctx.save();
+      if (dimEdge) ctx.globalAlpha = 0.2;
 
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
-      ctx.strokeStyle = isHighlighted
-        ? "hsl(234, 89%, 70%)"
-        : "hsl(220, 14%, 87%)";
-      ctx.lineWidth = isHighlighted ? 2.5 : 1;
-      ctx.setLineDash(isHighlighted ? [] : []);
-      ctx.stroke();
 
-      // Relationship label on highlighted edges
-      if (isHighlighted) {
+      if (isOnPath) {
+        ctx.strokeStyle = "hsl(35, 90%, 52%)";
+        ctx.lineWidth = 3;
+      } else if (isHighlighted) {
+        ctx.strokeStyle = "hsl(234, 89%, 70%)";
+        ctx.lineWidth = 2.5;
+      } else {
+        ctx.strokeStyle = "hsl(220, 14%, 87%)";
+        ctx.lineWidth = 1;
+      }
+      ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.restore();
+
+      // Label on highlighted or path edges
+      if (isHighlighted || isOnPath) {
         const mx = (a.x + b.x) / 2;
         const my = (a.y + b.y) / 2;
         ctx.font = "500 9px Inter, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillStyle = "hsl(234, 60%, 55%)";
+        const labelColor = isOnPath ? "hsl(35, 80%, 40%)" : "hsl(234, 60%, 55%)";
+        const bgColor = "hsl(220, 20%, 98.5%)";
 
-        // Background for label
         const textWidth = ctx.measureText(e.relationship).width;
-        ctx.save();
-        ctx.fillStyle = "hsl(220, 20%, 98.5%)";
+        ctx.fillStyle = bgColor;
         ctx.fillRect(mx - textWidth / 2 - 4, my - 7, textWidth + 8, 14);
-        ctx.restore();
-
-        ctx.fillStyle = "hsl(234, 60%, 55%)";
+        ctx.fillStyle = labelColor;
         ctx.fillText(e.relationship, mx, my + 3);
       }
     });
@@ -283,8 +330,11 @@ export default function GraphCanvas({
       const colors = getCategoryColors(n.node.category);
       const r = n.currentRadius;
 
-      // Dim unrelated nodes when something is selected
-      const dimmed = selectedNodeId && !isSelected && !isConnected;
+      const isOnPath = hasPath && pathNodeSet.has(n.id);
+      // Dim unrelated nodes when something is selected or path is shown
+      const dimmed = hasPath
+        ? !isOnPath
+        : selectedNodeId && !isSelected && !isConnected;
 
       ctx.save();
 
@@ -353,10 +403,30 @@ export default function GraphCanvas({
       ctx.fillText(n.node.category, n.x, catY);
 
       ctx.restore();
+
+      // Path step badge
+      if (hasPath && pathNodeSet.has(n.id) && highlightPath) {
+        const stepIdx = highlightPath.indexOf(n.id);
+        if (stepIdx !== -1) {
+          const bx = n.x + r * 0.72;
+          const by = n.y - r * 0.72;
+          const br = 9;
+          ctx.beginPath();
+          ctx.arc(bx, by, br, 0, 2 * Math.PI);
+          ctx.fillStyle = "hsl(35, 90%, 52%)";
+          ctx.fill();
+          ctx.font = `700 9px Inter, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(String(stepIdx + 1), bx, by);
+          ctx.textBaseline = "alphabetic";
+        }
+      }
     });
 
     ctx.restore();
-  }, [edges, getLayoutNode, selectedNodeId, isLoading]);
+  }, [edges, getLayoutNode, selectedNodeId, isLoading, highlightPath]);
 
   // Animation loop
   useEffect(() => {
@@ -487,4 +557,6 @@ export default function GraphCanvas({
       onWheel={handleWheel}
     />
   );
-}
+});
+
+export default GraphCanvas;
