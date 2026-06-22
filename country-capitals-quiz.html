@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Capitals Quiz</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 2.4rem;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      color: rgba(255,255,255,0.85);
+      font-size: 1rem;
+    }
+
+    /* Score card */
+    .score-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .score-big {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #667eea;
+      line-height: 1;
+    }
+
+    .score-label {
+      flex: 1;
+    }
+
+    .score-label .total {
+      font-size: 1.1rem;
+      color: #555;
+      font-weight: 600;
+    }
+
+    .score-label .subtitle {
+      font-size: 0.85rem;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .progress-bar-wrap {
+      flex: 2;
+      min-width: 180px;
+    }
+
+    .progress-bar-bg {
+      background: #eee;
+      border-radius: 999px;
+      height: 18px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .progress-pct {
+      text-align: right;
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .reset-btn {
+      background: #ff6b6b;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .reset-btn:hover { background: #ee5a5a; }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      outline: none;
+    }
+
+    .filter-btn {
+      padding: 10px 18px;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .filter-btn.active {
+      background: #fff;
+      color: #667eea;
+    }
+
+    .filter-btn:not(.active) {
+      background: rgba(255,255,255,0.3);
+      color: #fff;
+    }
+
+    .filter-btn:hover { opacity: 0.85; }
+
+    /* Region sections */
+    .region-section {
+      background: #fff;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .region-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .region-header .region-emoji { font-size: 1.4rem; }
+
+    .region-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .region-header .region-score {
+      font-size: 0.85rem;
+      background: rgba(255,255,255,0.25);
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .region-header .toggle-icon {
+      font-size: 0.8rem;
+      transition: transform 0.2s;
+    }
+
+    .region-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+    .country-list {
+      padding: 8px 0;
+    }
+
+    .country-list.hidden { display: none; }
+
+    /* Country row */
+    .country-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+
+    .country-row:last-child { border-bottom: none; }
+    .country-row:hover { background: #f9f9ff; }
+
+    .country-row.checked { background: #f0fff4; }
+
+    .country-row input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      accent-color: #667eea;
+      flex-shrink: 0;
+    }
+
+    .country-flag {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      width: 32px;
+      text-align: center;
+    }
+
+    .country-info {
+      flex: 1;
+    }
+
+    .country-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .country-row.checked .country-name { color: #2d7a4f; }
+
+    .capital-reveal {
+      margin-top: 2px;
+    }
+
+    .capital-text {
+      display: inline-block;
+      font-size: 0.85rem;
+      color: #999;
+      font-style: italic;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .capital-text.revealed {
+      color: #667eea;
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    .capital-text:not(.revealed)::after {
+      content: "Tap to reveal capital";
+    }
+
+    .capital-text.revealed::before {
+      content: "🏛️ ";
+    }
+
+    .check-label {
+      font-size: 0.75rem;
+      color: #aaa;
+      flex-shrink: 0;
+    }
+
+    .country-row.checked .check-label {
+      color: #2d7a4f;
+      font-weight: 700;
+    }
+
+    /* Celebration */
+    .celebration {
+      display: none;
+      text-align: center;
+      padding: 30px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
+    }
+
+    .celebration.show { display: block; }
+
+    .celebration h2 { font-size: 2rem; color: #667eea; }
+    .celebration p  { color: #666; margin-top: 8px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255,255,255,0.7);
+      font-size: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .header h1 { font-size: 1.7rem; }
+      .score-big  { font-size: 2.2rem; }
+      .score-card { padding: 14px 16px; }
+      .country-flag { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🌍 Country Capitals Quiz</h1>
+    <p>How many capital cities do you know? Check the box when you get it right!</p>
+  </div>
+
+  <!-- Score Card -->
+  <div class="score-card">
+    <div class="score-big" id="scoreNum">0</div>
+    <div class="score-label">
+      <div class="total" id="scoreTotal">out of 195 capitals</div>
+      <div class="subtitle" id="scoreMsg">Let's get started! 🚀</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-pct" id="progressPct">0%</div>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">Reset All</button>
+  </div>
+
+  <!-- Celebration -->
+  <div class="celebration" id="celebration">
+    <div style="font-size:3rem">🎉🏆🎉</div>
+    <h2>Amazing! You know them ALL!</h2>
+    <p>You've correctly identified every capital city in the world. World Geography Champion!</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <input class="search-box" type="text" id="searchBox" placeholder="🔍 Search country or capital..." oninput="applyFilters()" />
+    <button class="filter-btn active" id="filterAll"     onclick="setFilter('all')">All</button>
+    <button class="filter-btn"        id="filterUnchecked" onclick="setFilter('unchecked')">To Learn</button>
+    <button class="filter-btn"        id="filterChecked"   onclick="setFilter('checked')">Known ✓</button>
+  </div>
+
+  <!-- Country list will be injected here -->
+  <div id="quizArea"></div>
+
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const REGIONS = [
+  {
+    name: "Africa", emoji: "🌍",
+    countries: [
+      ["🇩🇿","Algeria","Algiers"],["🇦🇴","Angola","Luanda"],["🇧🇯","Benin","Porto-Novo"],
+      ["🇧🇼","Botswana","Gaborone"],["🇧🇫","Burkina Faso","Ouagadougou"],["🇧🇮","Burundi","Gitega"],
+      ["🇨🇻","Cape Verde","Praia"],["🇨🇲","Cameroon","Yaoundé"],["🇨🇫","Central African Republic","Bangui"],
+      ["🇹🇩","Chad","N'Djamena"],["🇰🇲","Comoros","Moroni"],["🇨🇩","DR Congo","Kinshasa"],
+      ["🇨🇬","Congo","Brazzaville"],["🇩🇯","Djibouti","Djibouti"],["🇪🇬","Egypt","Cairo"],
+      ["🇬🇶","Equatorial Guinea","Malabo"],["🇪🇷","Eritrea","Asmara"],["🇸🇿","Eswatini","Mbabane"],
+      ["🇪🇹","Ethiopia","Addis Ababa"],["🇬🇦","Gabon","Libreville"],["🇬🇲","Gambia","Banjul"],
+      ["🇬🇭","Ghana","Accra"],["🇬🇳","Guinea","Conakry"],["🇬🇼","Guinea-Bissau","Bissau"],
+      ["🇨🇮","Ivory Coast","Yamoussoukro"],["🇰🇪","Kenya","Nairobi"],["🇱🇸","Lesotho","Maseru"],
+      ["🇱🇷","Liberia","Monrovia"],["🇱🇾","Libya","Tripoli"],["🇲🇬","Madagascar","Antananarivo"],
+      ["🇲🇼","Malawi","Lilongwe"],["🇲🇱","Mali","Bamako"],["🇲🇷","Mauritania","Nouakchott"],
+      ["🇲🇺","Mauritius","Port Louis"],["🇲🇦","Morocco","Rabat"],["🇲🇿","Mozambique","Maputo"],
+      ["🇳🇦","Namibia","Windhoek"],["🇳🇪","Niger","Niamey"],["🇳🇬","Nigeria","Abuja"],
+      ["🇷🇼","Rwanda","Kigali"],["🇸🇹","São Tomé & Príncipe","São Tomé"],["🇸🇳","Senegal","Dakar"],
+      ["🇸🇨","Seychelles","Victoria"],["🇸🇱","Sierra Leone","Freetown"],["🇸🇴","Somalia","Mogadishu"],
+      ["🇿🇦","South Africa","Pretoria"],["🇸🇸","South Sudan","Juba"],["🇸🇩","Sudan","Khartoum"],
+      ["🇹🇿","Tanzania","Dodoma"],["🇹🇬","Togo","Lomé"],["🇹🇳","Tunisia","Tunis"],
+      ["🇺🇬","Uganda","Kampala"],["🇿🇲","Zambia","Lusaka"],["🇿🇼","Zimbabwe","Harare"],
+    ]
+  },
+  {
+    name: "Americas", emoji: "🌎",
+    countries: [
+      ["🇦🇬","Antigua & Barbuda","Saint John's"],["🇦🇷","Argentina","Buenos Aires"],
+      ["🇧🇸","Bahamas","Nassau"],["🇧🇧","Barbados","Bridgetown"],["🇧🇿","Belize","Belmopan"],
+      ["🇧🇴","Bolivia","Sucre"],["🇧🇷","Brazil","Brasília"],["🇨🇦","Canada","Ottawa"],
+      ["🇨🇱","Chile","Santiago"],["🇨🇴","Colombia","Bogotá"],["🇨🇷","Costa Rica","San José"],
+      ["🇨🇺","Cuba","Havana"],["🇩🇲","Dominica","Roseau"],["🇩🇴","Dominican Republic","Santo Domingo"],
+      ["🇪🇨","Ecuador","Quito"],["🇸🇻","El Salvador","San Salvador"],["🇬🇩","Grenada","Saint George's"],
+      ["🇬🇹","Guatemala","Guatemala City"],["🇬🇾","Guyana","Georgetown"],["🇭🇹","Haiti","Port-au-Prince"],
+      ["🇭🇳","Honduras","Tegucigalpa"],["🇯🇲","Jamaica","Kingston"],["🇲🇽","Mexico","Mexico City"],
+      ["🇳🇮","Nicaragua","Managua"],["🇵🇦","Panama","Panama City"],["🇵🇾","Paraguay","Asunción"],
+      ["🇵🇪","Peru","Lima"],["🇰🇳","Saint Kitts & Nevis","Basseterre"],["🇱🇨","Saint Lucia","Castries"],
+      ["🇻🇨","Saint Vincent & Grenadines","Kingstown"],["🇸🇷","Suriname","Paramaribo"],
+      ["🇹🇹","Trinidad & Tobago","Port of Spain"],["🇺🇸","United States","Washington D.C."],
+      ["🇺🇾","Uruguay","Montevideo"],["🇻🇪","Venezuela","Caracas"],
+    ]
+  },
+  {
+    name: "Asia", emoji: "🌏",
+    countries: [
+      ["🇦🇫","Afghanistan","Kabul"],["🇦🇲","Armenia","Yerevan"],["🇦🇿","Azerbaijan","Baku"],
+      ["🇧🇭","Bahrain","Manama"],["🇧🇩","Bangladesh","Dhaka"],["🇧🇹","Bhutan","Thimphu"],
+      ["🇧🇳","Brunei","Bandar Seri Begawan"],["🇰🇭","Cambodia","Phnom Penh"],["🇨🇳","China","Beijing"],
+      ["🇨🇾","Cyprus","Nicosia"],["🇬🇪","Georgia","Tbilisi"],["🇮🇳","India","New Delhi"],
+      ["🇮🇩","Indonesia","Jakarta"],["🇮🇷","Iran","Tehran"],["🇮🇶","Iraq","Baghdad"],
+      ["🇮🇱","Israel","Jerusalem"],["🇯🇵","Japan","Tokyo"],["🇯🇴","Jordan","Amman"],
+      ["🇰🇿","Kazakhstan","Astana"],["🇰🇼","Kuwait","Kuwait City"],["🇰🇬","Kyrgyzstan","Bishkek"],
+      ["🇱🇦","Laos","Vientiane"],["🇱🇧","Lebanon","Beirut"],["🇲🇾","Malaysia","Kuala Lumpur"],
+      ["🇲🇻","Maldives","Malé"],["🇲🇳","Mongolia","Ulaanbaatar"],["🇲🇲","Myanmar","Naypyidaw"],
+      ["🇳🇵","Nepal","Kathmandu"],["🇰🇵","North Korea","Pyongyang"],["🇴🇲","Oman","Muscat"],
+      ["🇵🇰","Pakistan","Islamabad"],["🇵🇸","Palestine","Ramallah"],["🇵🇭","Philippines","Manila"],
+      ["🇶🇦","Qatar","Doha"],["🇸🇦","Saudi Arabia","Riyadh"],["🇸🇬","Singapore","Singapore"],
+      ["🇰🇷","South Korea","Seoul"],["🇱🇰","Sri Lanka","Sri Jayawardenepura Kotte"],["🇸🇾","Syria","Damascus"],
+      ["🇹🇼","Taiwan","Taipei"],["🇹🇯","Tajikistan","Dushanbe"],["🇹🇭","Thailand","Bangkok"],
+      ["🇹🇱","Timor-Leste","Dili"],["🇹🇲","Turkmenistan","Ashgabat"],["🇦🇪","UAE","Abu Dhabi"],
+      ["🇺🇿","Uzbekistan","Tashkent"],["🇻🇳","Vietnam","Hanoi"],["🇾🇪","Yemen","Sana'a"],
+    ]
+  },
+  {
+    name: "Europe", emoji: "🗺️",
+    countries: [
+      ["🇦🇱","Albania","Tirana"],["🇦🇩","Andorra","Andorra la Vella"],["🇦🇹","Austria","Vienna"],
+      ["🇧🇾","Belarus","Minsk"],["🇧🇪","Belgium","Brussels"],["🇧🇦","Bosnia & Herzegovina","Sarajevo"],
+      ["🇧🇬","Bulgaria","Sofia"],["🇭🇷","Croatia","Zagreb"],["🇨🇿","Czech Republic","Prague"],
+      ["🇩🇰","Denmark","Copenhagen"],["🇪🇪","Estonia","Tallinn"],["🇫🇮","Finland","Helsinki"],
+      ["🇫🇷","France","Paris"],["🇩🇪","Germany","Berlin"],["🇬🇷","Greece","Athens"],
+      ["🇭🇺","Hungary","Budapest"],["🇮🇸","Iceland","Reykjavik"],["🇮🇪","Ireland","Dublin"],
+      ["🇮🇹","Italy","Rome"],["🇽🇰","Kosovo","Pristina"],["🇱🇻","Latvia","Riga"],
+      ["🇱🇮","Liechtenstein","Vaduz"],["🇱🇹","Lithuania","Vilnius"],["🇱🇺","Luxembourg","Luxembourg City"],
+      ["🇲🇹","Malta","Valletta"],["🇲🇩","Moldova","Chișinău"],["🇲🇨","Monaco","Monaco"],
+      ["🇲🇪","Montenegro","Podgorica"],["🇳🇱","Netherlands","Amsterdam"],["🇲🇰","North Macedonia","Skopje"],
+      ["🇳🇴","Norway","Oslo"],["🇵🇱","Poland","Warsaw"],["🇵🇹","Portugal","Lisbon"],
+      ["🇷🇴","Romania","Bucharest"],["🇷🇺","Russia","Moscow"],["🇸🇲","San Marino","San Marino"],
+      ["🇷🇸","Serbia","Belgrade"],["🇸🇰","Slovakia","Bratislava"],["🇸🇮","Slovenia","Ljubljana"],
+      ["🇪🇸","Spain","Madrid"],["🇸🇪","Sweden","Stockholm"],["🇨🇭","Switzerland","Bern"],
+      ["🇺🇦","Ukraine","Kyiv"],["🇬🇧","United Kingdom","London"],["🇻🇦","Vatican City","Vatican City"],
+    ]
+  },
+  {
+    name: "Oceania", emoji: "🏝️",
+    countries: [
+      ["🇦🇺","Australia","Canberra"],["🇫🇯","Fiji","Suva"],["🇰🇮","Kiribati","South Tarawa"],
+      ["🇲🇭","Marshall Islands","Majuro"],["🇫🇲","Micronesia","Palikir"],["🇳🇷","Nauru","Yaren"],
+      ["🇳🇿","New Zealand","Wellington"],["🇵🇼","Palau","Ngerulmud"],["🇵🇬","Papua New Guinea","Port Moresby"],
+      ["🇼🇸","Samoa","Apia"],["🇸🇧","Solomon Islands","Honiara"],["🇹🇴","Tonga","Nuku'alofa"],
+      ["🇹🇻","Tuvalu","Funafuti"],["🇻🇺","Vanuatu","Port Vila"],
+    ]
+  },
+];
+
+// Build flat list for totals
+const ALL_COUNTRIES = REGIONS.flatMap(r => r.countries);
+const TOTAL = ALL_COUNTRIES.length;
+
+// State
+let checked = new Set(JSON.parse(localStorage.getItem('capitals_checked') || '[]'));
+let currentFilter = 'all';
+
+function save() {
+  localStorage.setItem('capitals_checked', JSON.stringify([...checked]));
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function countryId(flag, name) {
+  return (flag + name).replace(/\s/g,'_');
+}
+
+function buildQuiz() {
+  const area = document.getElementById('quizArea');
+  const query = document.getElementById('searchBox').value.toLowerCase();
+  area.innerHTML = '';
+  let anyVisible = false;
+
+  REGIONS.forEach(region => {
+    const filtered = region.countries.filter(([flag, country, capital]) => {
+      const matchQuery = !query || country.toLowerCase().includes(query) || capital.toLowerCase().includes(query);
+      const id = countryId(flag, country);
+      const isChecked = checked.has(id);
+      const matchFilter =
+        currentFilter === 'all' ? true :
+        currentFilter === 'checked' ? isChecked :
+        !isChecked;
+      return matchQuery && matchFilter;
+    });
+
+    if (filtered.length === 0) return;
+    anyVisible = true;
+
+    const regionChecked = region.countries.filter(([f,n]) => checked.has(countryId(f,n))).length;
+    const section = document.createElement('div');
+    section.className = 'region-section';
+    section.innerHTML = `
+      <div class="region-header" onclick="toggleRegion(this)">
+        <span class="region-emoji">${region.emoji}</span>
+        <h2>${region.name}</h2>
+        <span class="region-score">${regionChecked} / ${region.countries.length}</span>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="country-list" id="region-${region.name.replace(/\s/g,'-')}"></div>
+    `;
+    const list = section.querySelector('.country-list');
+
+    filtered.forEach(([flag, country, capital]) => {
+      const id = countryId(flag, country);
+      const isChecked = checked.has(id);
+      const row = document.createElement('div');
+      row.className = 'country-row' + (isChecked ? ' checked' : '');
+      row.id = 'row-' + id;
+      row.innerHTML = `
+        <input type="checkbox" id="cb-${id}" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${flag}','${country}','${capital}')" onclick="event.stopPropagation()" />
+        <span class="country-flag">${flag}</span>
+        <div class="country-info">
+          <div class="country-name">${country}</div>
+          <div class="capital-reveal">
+            <span class="capital-text${isChecked ? ' revealed' : ''}" id="cap-${id}" onclick="revealCapital('${id}','${capital}',event)">${isChecked ? capital : ''}</span>
+          </div>
+        </div>
+        <div class="check-label">${isChecked ? '✓ Got it!' : ''}</div>
+      `;
+      row.addEventListener('click', (e) => {
+        if (e.target.type === 'checkbox') return;
+        if (e.target.classList.contains('capital-text')) return;
+        document.getElementById('cb-' + id).click();
+      });
+      list.appendChild(row);
+    });
+
+    area.appendChild(section);
+  });
+
+  if (!anyVisible) {
+    area.innerHTML = '<div class="empty-state">No countries found. Try a different search.</div>';
+  }
+
+  updateScore();
+}
+
+function revealCapital(id, capital, event) {
+  event.stopPropagation();
+  const el = document.getElementById('cap-' + id);
+  if (!el.classList.contains('revealed')) {
+    el.classList.add('revealed');
+    el.textContent = capital;
+  }
+}
+
+function toggleCheck(flag, country, capital) {
+  const id = countryId(flag, country);
+  if (checked.has(id)) {
+    checked.delete(id);
+  } else {
+    checked.add(id);
+  }
+  save();
+  buildQuiz();
+}
+
+function toggleRegion(header) {
+  header.classList.toggle('collapsed');
+  const list = header.nextElementSibling;
+  list.classList.toggle('hidden');
+}
+
+// ── Score ──────────────────────────────────────────────────────────────────────
+function updateScore() {
+  const count = checked.size;
+  document.getElementById('scoreNum').textContent = count;
+  document.getElementById('scoreTotal').textContent = `out of ${TOTAL} capitals`;
+  const pct = Math.round((count / TOTAL) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+
+  let msg;
+  if (count === 0)       msg = "Let's get started! 🚀";
+  else if (count < 20)   msg = "Good start, keep going! 💪";
+  else if (count < 50)   msg = "You're on a roll! 🌟";
+  else if (count < 100)  msg = "Halfway there, impressive! 🎯";
+  else if (count < 150)  msg = "World geography expert! 🧠";
+  else if (count < 195)  msg = "Almost there — nearly perfect! 🏆";
+  else                   msg = "Perfect score — world champion! 🎉";
+  document.getElementById('scoreMsg').textContent = msg;
+
+  const cel = document.getElementById('celebration');
+  if (count === TOTAL) cel.classList.add('show');
+  else cel.classList.remove('show');
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function setFilter(f) {
+  currentFilter = f;
+  ['filterAll','filterUnchecked','filterChecked'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+  const map = { all:'filterAll', unchecked:'filterUnchecked', checked:'filterChecked' };
+  document.getElementById(map[f]).classList.add('active');
+  buildQuiz();
+}
+
+function applyFilters() { buildQuiz(); }
+
+function resetAll() {
+  if (!confirm('Reset all checkboxes? This will clear your progress.')) return;
+  checked.clear();
+  save();
+  document.querySelectorAll('.capital-text.revealed').forEach(el => {
+    el.classList.remove('revealed');
+    el.textContent = '';
+  });
+  buildQuiz();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildQuiz();
+</script>
+</body>
+</html>
