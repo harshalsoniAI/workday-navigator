@@ -257,10 +257,18 @@ const DATA = [
 ];
 
 const TOTAL = DATA.reduce((s, r) => s + r.countries.length, 0);
-let checked = new Set(JSON.parse(localStorage.getItem('cl_checked') || '[]'));
 
-function id(flag, name) { return flag + name; }
-function save() { localStorage.setItem('cl_checked', JSON.stringify([...checked])); }
+// Safe localStorage wrapper — iOS Safari blocks it on file:// URLs
+function storageGet(key) {
+  try { return localStorage.getItem(key); } catch(e) { return null; }
+}
+function storageSet(key, val) {
+  try { localStorage.setItem(key, val); } catch(e) {}
+}
+
+let checked = new Set(JSON.parse(storageGet('cl_checked') || '[]'));
+
+function save() { storageSet('cl_checked', JSON.stringify([...checked])); }
 
 function updateCounter() {
   const n = checked.size;
@@ -268,22 +276,15 @@ function updateCounter() {
   document.getElementById('fill').style.width = (n / TOTAL * 100) + '%';
 }
 
-function toggle(flag, name, cb) {
-  const key = id(flag, name);
-  if (cb.checked) checked.add(key); else checked.delete(key);
-  save();
-  const row = cb.closest('.row');
-  row.classList.toggle('done', cb.checked);
-  updateCounter();
+function setRowState(row, done) {
+  row.classList.toggle('done', done);
+  row.querySelector('input').checked = done;
 }
 
 function resetAll() {
   if (!confirm('Clear all checkboxes?')) return;
   checked.clear(); save();
-  document.querySelectorAll('.row.done').forEach(r => {
-    r.classList.remove('done');
-    r.querySelector('input').checked = false;
-  });
+  document.querySelectorAll('.row').forEach(r => setRowState(r, false));
   updateCounter();
 }
 
@@ -302,28 +303,55 @@ function render() {
 
     const sec = document.createElement('div');
     sec.className = 'region';
-    sec.innerHTML = `<div class="region-title">${region}</div>`;
+    const title = document.createElement('div');
+    title.className = 'region-title';
+    title.textContent = region;
+    sec.appendChild(title);
 
     filtered.forEach(([flag, name, capital]) => {
-      const key = id(flag, name);
+      const key = flag + name;
       const done = checked.has(key);
+
       const row = document.createElement('div');
       row.className = 'row' + (done ? ' done' : '');
-      row.innerHTML = `
-        <input type="checkbox" ${done ? 'checked' : ''}
-          onchange="toggle('${flag.replace(/'/g,"\\'")}','${name.replace(/'/g,"\\'")}',this)"
-          onclick="event.stopPropagation()" />
-        <span class="flag">${flag}</span>
-        <div class="info">
-          <div class="country">${name}</div>
-          <div class="capital">${capital}</div>
-        </div>`;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = done;
+
+      const flagSpan = document.createElement('span');
+      flagSpan.className = 'flag';
+      flagSpan.textContent = flag;
+
+      const info = document.createElement('div');
+      info.className = 'info';
+      const countryDiv = document.createElement('div');
+      countryDiv.className = 'country';
+      countryDiv.textContent = name;
+      const capitalDiv = document.createElement('div');
+      capitalDiv.className = 'capital';
+      capitalDiv.textContent = capital;
+      info.appendChild(countryDiv);
+      info.appendChild(capitalDiv);
+
+      row.appendChild(cb);
+      row.appendChild(flagSpan);
+      row.appendChild(info);
+
+      function doToggle(newState) {
+        cb.checked = newState;
+        if (newState) checked.add(key); else checked.delete(key);
+        save();
+        row.classList.toggle('done', newState);
+        updateCounter();
+      }
+
+      cb.addEventListener('change', () => doToggle(cb.checked));
       row.addEventListener('click', e => {
-        if (e.target.tagName === 'INPUT') return;
-        const cb = row.querySelector('input');
-        cb.checked = !cb.checked;
-        toggle(flag, name, cb);
+        if (e.target === cb) return;
+        doToggle(!cb.checked);
       });
+
       sec.appendChild(row);
     });
 
