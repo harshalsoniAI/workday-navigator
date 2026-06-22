@@ -13,10 +13,13 @@
     .country { font-weight: bold; }
     .capital { color: #555; }
     h2 { margin: 24px 0 8px; font-size: 1rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    input[type="reset"] { margin-bottom: 20px; padding: 8px 20px; font-size: 0.9rem; background: #e74c3c; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    input[type="reset"]:active { background: #c0392b; }
   </style>
 </head>
 <body>
 <h1>🌍 Country Capitals Quiz</h1>
+<input type="reset" value="Reset All" onclick="return confirm('Clear all checkboxes?')" />
 
 <h2>Africa</h2>
 <ul>
@@ -233,5 +236,6 @@
   <li><input type="checkbox"><span class="country">Vanuatu</span> — <span class="capital">Port Vila</span></li>
 </ul>
 
+</form>
 </body>
 </html>
