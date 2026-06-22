@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Capitals Checklist</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      padding-bottom: 40px;
+    }
+
+    /* Sticky header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #4f46e5;
+      color: #fff;
+      padding: 14px 16px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .counter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .counter-text {
+      font-size: 0.85rem;
+      min-width: 80px;
+    }
+
+    .progress-bg {
+      flex: 1;
+      background: rgba(255,255,255,0.25);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #a5f3fc;
+      border-radius: 999px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .reset-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #fff;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    /* Search */
+    .search-wrap {
+      padding: 10px 16px 0;
+      background: #4f46e5;
+      position: sticky;
+      top: 70px;
+      z-index: 9;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.95rem;
+      outline: none;
+      margin-bottom: 10px;
+    }
+
+    /* Region header */
+    .region {
+      margin: 12px 12px 0;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .region-title {
+      background: #ede9fe;
+      color: #4f46e5;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+    }
+
+    /* Row */
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+
+    .row:last-child { border-bottom: none; }
+    .row:active { background: #f3f4f6; }
+    .row.done { background: #f0fdf4; }
+
+    .row input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #4f46e5;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .flag { font-size: 1.4rem; flex-shrink: 0; }
+
+    .info { flex: 1; min-width: 0; }
+
+    .country {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .row.done .country { color: #15803d; }
+
+    .capital {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+
+    .row.done .capital { color: #16a34a; }
+
+    /* Empty */
+    .empty {
+      text-align: center;
+      padding: 40px 16px;
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌍 Country Capitals Checklist</h1>
+  <div class="counter-bar">
+    <span class="counter-text" id="counter">0 / 196</span>
+    <div class="progress-bg"><div class="progress-fill" id="fill"></div></div>
+    <button class="reset-btn" onclick="resetAll()">Reset</button>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <input class="search-input" type="search" id="search" placeholder="🔍 Search country or capital…" oninput="render()" />
+</div>
+
+<div id="list"></div>
+
+<script>
+const DATA = [
+  { region:"Africa", countries:[
+    ["🇩🇿","Algeria","Algiers"],["🇦🇴","Angola","Luanda"],["🇧🇯","Benin","Porto-Novo"],
+    ["🇧🇼","Botswana","Gaborone"],["🇧🇫","Burkina Faso","Ouagadougou"],["🇧🇮","Burundi","Gitega"],
+    ["🇨🇲","Cameroon","Yaoundé"],["🇨🇻","Cape Verde","Praia"],["🇨🇫","Central African Republic","Bangui"],
+    ["🇹🇩","Chad","N'Djamena"],["🇰🇲","Comoros","Moroni"],["🇨🇩","DR Congo","Kinshasa"],
+    ["🇨🇬","Congo","Brazzaville"],["🇩🇯","Djibouti","Djibouti"],["🇪🇬","Egypt","Cairo"],
+    ["🇬🇶","Equatorial Guinea","Malabo"],["🇪🇷","Eritrea","Asmara"],["🇸🇿","Eswatini","Mbabane"],
+    ["🇪🇹","Ethiopia","Addis Ababa"],["🇬🇦","Gabon","Libreville"],["🇬🇲","Gambia","Banjul"],
+    ["🇬🇭","Ghana","Accra"],["🇬🇳","Guinea","Conakry"],["🇬🇼","Guinea-Bissau","Bissau"],
+    ["🇨🇮","Ivory Coast","Yamoussoukro"],["🇰🇪","Kenya","Nairobi"],["🇱🇸","Lesotho","Maseru"],
+    ["🇱🇷","Liberia","Monrovia"],["🇱🇾","Libya","Tripoli"],["🇲🇬","Madagascar","Antananarivo"],
+    ["🇲🇼","Malawi","Lilongwe"],["🇲🇱","Mali","Bamako"],["🇲🇷","Mauritania","Nouakchott"],
+    ["🇲🇺","Mauritius","Port Louis"],["🇲🇦","Morocco","Rabat"],["🇲🇿","Mozambique","Maputo"],
+    ["🇳🇦","Namibia","Windhoek"],["🇳🇪","Niger","Niamey"],["🇳🇬","Nigeria","Abuja"],
+    ["🇷🇼","Rwanda","Kigali"],["🇸🇹","São Tomé & Príncipe","São Tomé"],["🇸🇳","Senegal","Dakar"],
+    ["🇸🇨","Seychelles","Victoria"],["🇸🇱","Sierra Leone","Freetown"],["🇸🇴","Somalia","Mogadishu"],
+    ["🇿🇦","South Africa","Pretoria"],["🇸🇸","South Sudan","Juba"],["🇸🇩","Sudan","Khartoum"],
+    ["🇹🇿","Tanzania","Dodoma"],["🇹🇬","Togo","Lomé"],["🇹🇳","Tunisia","Tunis"],
+    ["🇺🇬","Uganda","Kampala"],["🇿🇲","Zambia","Lusaka"],["🇿🇼","Zimbabwe","Harare"],
+  ]},
+  { region:"Americas", countries:[
+    ["🇦🇬","Antigua & Barbuda","Saint John's"],["🇦🇷","Argentina","Buenos Aires"],
+    ["🇧🇸","Bahamas","Nassau"],["🇧🇧","Barbados","Bridgetown"],["🇧🇿","Belize","Belmopan"],
+    ["🇧🇴","Bolivia","Sucre"],["🇧🇷","Brazil","Brasília"],["🇨🇦","Canada","Ottawa"],
+    ["🇨🇱","Chile","Santiago"],["🇨🇴","Colombia","Bogotá"],["🇨🇷","Costa Rica","San José"],
+    ["🇨🇺","Cuba","Havana"],["🇩🇲","Dominica","Roseau"],["🇩🇴","Dominican Republic","Santo Domingo"],
+    ["🇪🇨","Ecuador","Quito"],["🇸🇻","El Salvador","San Salvador"],["🇬🇩","Grenada","Saint George's"],
+    ["🇬🇹","Guatemala","Guatemala City"],["🇬🇾","Guyana","Georgetown"],["🇭🇹","Haiti","Port-au-Prince"],
+    ["🇭🇳","Honduras","Tegucigalpa"],["🇯🇲","Jamaica","Kingston"],["🇲🇽","Mexico","Mexico City"],
+    ["🇳🇮","Nicaragua","Managua"],["🇵🇦","Panama","Panama City"],["🇵🇾","Paraguay","Asunción"],
+    ["🇵🇪","Peru","Lima"],["🇰🇳","Saint Kitts & Nevis","Basseterre"],["🇱🇨","Saint Lucia","Castries"],
+    ["🇻🇨","Saint Vincent & Grenadines","Kingstown"],["🇸🇷","Suriname","Paramaribo"],
+    ["🇹🇹","Trinidad & Tobago","Port of Spain"],["🇺🇸","United States","Washington D.C."],
+    ["🇺🇾","Uruguay","Montevideo"],["🇻🇪","Venezuela","Caracas"],
+  ]},
+  { region:"Asia", countries:[
+    ["🇦🇫","Afghanistan","Kabul"],["🇦🇲","Armenia","Yerevan"],["🇦🇿","Azerbaijan","Baku"],
+    ["🇧🇭","Bahrain","Manama"],["🇧🇩","Bangladesh","Dhaka"],["🇧🇹","Bhutan","Thimphu"],
+    ["🇧🇳","Brunei","Bandar Seri Begawan"],["🇰🇭","Cambodia","Phnom Penh"],["🇨🇳","China","Beijing"],
+    ["🇨🇾","Cyprus","Nicosia"],["🇬🇪","Georgia","Tbilisi"],["🇮🇳","India","New Delhi"],
+    ["🇮🇩","Indonesia","Jakarta"],["🇮🇷","Iran","Tehran"],["🇮🇶","Iraq","Baghdad"],
+    ["🇮🇱","Israel","Jerusalem"],["🇯🇵","Japan","Tokyo"],["🇯🇴","Jordan","Amman"],
+    ["🇰🇿","Kazakhstan","Astana"],["🇰🇼","Kuwait","Kuwait City"],["🇰🇬","Kyrgyzstan","Bishkek"],
+    ["🇱🇦","Laos","Vientiane"],["🇱🇧","Lebanon","Beirut"],["🇲🇾","Malaysia","Kuala Lumpur"],
+    ["🇲🇻","Maldives","Malé"],["🇲🇳","Mongolia","Ulaanbaatar"],["🇲🇲","Myanmar","Naypyidaw"],
+    ["🇳🇵","Nepal","Kathmandu"],["🇰🇵","North Korea","Pyongyang"],["🇴🇲","Oman","Muscat"],
+    ["🇵🇰","Pakistan","Islamabad"],["🇵🇸","Palestine","Ramallah"],["🇵🇭","Philippines","Manila"],
+    ["🇶🇦","Qatar","Doha"],["🇸🇦","Saudi Arabia","Riyadh"],["🇸🇬","Singapore","Singapore"],
+    ["🇰🇷","South Korea","Seoul"],["🇱🇰","Sri Lanka","Sri Jayawardenepura Kotte"],["🇸🇾","Syria","Damascus"],
+    ["🇹🇼","Taiwan","Taipei"],["🇹🇯","Tajikistan","Dushanbe"],["🇹🇭","Thailand","Bangkok"],
+    ["🇹🇱","Timor-Leste","Dili"],["🇹🇲","Turkmenistan","Ashgabat"],["🇦🇪","UAE","Abu Dhabi"],
+    ["🇺🇿","Uzbekistan","Tashkent"],["🇻🇳","Vietnam","Hanoi"],["🇾🇪","Yemen","Sana'a"],
+  ]},
+  { region:"Europe", countries:[
+    ["🇦🇱","Albania","Tirana"],["🇦🇩","Andorra","Andorra la Vella"],["🇦🇹","Austria","Vienna"],
+    ["🇧🇾","Belarus","Minsk"],["🇧🇪","Belgium","Brussels"],["🇧🇦","Bosnia & Herzegovina","Sarajevo"],
+    ["🇧🇬","Bulgaria","Sofia"],["🇭🇷","Croatia","Zagreb"],["🇨🇿","Czech Republic","Prague"],
+    ["🇩🇰","Denmark","Copenhagen"],["🇪🇪","Estonia","Tallinn"],["🇫🇮","Finland","Helsinki"],
+    ["🇫🇷","France","Paris"],["🇩🇪","Germany","Berlin"],["🇬🇷","Greece","Athens"],
+    ["🇭🇺","Hungary","Budapest"],["🇮🇸","Iceland","Reykjavik"],["🇮🇪","Ireland","Dublin"],
+    ["🇮🇹","Italy","Rome"],["🇽🇰","Kosovo","Pristina"],["🇱🇻","Latvia","Riga"],
+    ["🇱🇮","Liechtenstein","Vaduz"],["🇱🇹","Lithuania","Vilnius"],["🇱🇺","Luxembourg","Luxembourg City"],
+    ["🇲🇹","Malta","Valletta"],["🇲🇩","Moldova","Chișinău"],["🇲🇨","Monaco","Monaco"],
+    ["🇲🇪","Montenegro","Podgorica"],["🇳🇱","Netherlands","Amsterdam"],["🇲🇰","North Macedonia","Skopje"],
+    ["🇳🇴","Norway","Oslo"],["🇵🇱","Poland","Warsaw"],["🇵🇹","Portugal","Lisbon"],
+    ["🇷🇴","Romania","Bucharest"],["🇷🇺","Russia","Moscow"],["🇸🇲","San Marino","San Marino"],
+    ["🇷🇸","Serbia","Belgrade"],["🇸🇰","Slovakia","Bratislava"],["🇸🇮","Slovenia","Ljubljana"],
+    ["🇪🇸","Spain","Madrid"],["🇸🇪","Sweden","Stockholm"],["🇨🇭","Switzerland","Bern"],
+    ["🇺🇦","Ukraine","Kyiv"],["🇬🇧","United Kingdom","London"],["🇻🇦","Vatican City","Vatican City"],
+  ]},
+  { region:"Oceania", countries:[
+    ["🇦🇺","Australia","Canberra"],["🇫🇯","Fiji","Suva"],["🇰🇮","Kiribati","South Tarawa"],
+    ["🇲🇭","Marshall Islands","Majuro"],["🇫🇲","Micronesia","Palikir"],["🇳🇷","Nauru","Yaren"],
+    ["🇳🇿","New Zealand","Wellington"],["🇵🇼","Palau","Ngerulmud"],["🇵🇬","Papua New Guinea","Port Moresby"],
+    ["🇼🇸","Samoa","Apia"],["🇸🇧","Solomon Islands","Honiara"],["🇹🇴","Tonga","Nuku'alofa"],
+    ["🇹🇻","Tuvalu","Funafuti"],["🇻🇺","Vanuatu","Port Vila"],
+  ]},
+];
+
+const TOTAL = DATA.reduce((s, r) => s + r.countries.length, 0);
+let checked = new Set(JSON.parse(localStorage.getItem('cl_checked') || '[]'));
+
+function id(flag, name) { return flag + name; }
+function save() { localStorage.setItem('cl_checked', JSON.stringify([...checked])); }
+
+function updateCounter() {
+  const n = checked.size;
+  document.getElementById('counter').textContent = `${n} / ${TOTAL}`;
+  document.getElementById('fill').style.width = (n / TOTAL * 100) + '%';
+}
+
+function toggle(flag, name, cb) {
+  const key = id(flag, name);
+  if (cb.checked) checked.add(key); else checked.delete(key);
+  save();
+  const row = cb.closest('.row');
+  row.classList.toggle('done', cb.checked);
+  updateCounter();
+}
+
+function resetAll() {
+  if (!confirm('Clear all checkboxes?')) return;
+  checked.clear(); save();
+  document.querySelectorAll('.row.done').forEach(r => {
+    r.classList.remove('done');
+    r.querySelector('input').checked = false;
+  });
+  updateCounter();
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const listEl = document.getElementById('list');
+  listEl.innerHTML = '';
+  let any = false;
+
+  DATA.forEach(({ region, countries }) => {
+    const filtered = countries.filter(([,n,c]) =>
+      !q || n.toLowerCase().includes(q) || c.toLowerCase().includes(q)
+    );
+    if (!filtered.length) return;
+    any = true;
+
+    const sec = document.createElement('div');
+    sec.className = 'region';
+    sec.innerHTML = `<div class="region-title">${region}</div>`;
+
+    filtered.forEach(([flag, name, capital]) => {
+      const key = id(flag, name);
+      const done = checked.has(key);
+      const row = document.createElement('div');
+      row.className = 'row' + (done ? ' done' : '');
+      row.innerHTML = `
+        <input type="checkbox" ${done ? 'checked' : ''}
+          onchange="toggle('${flag.replace(/'/g,"\\'")}','${name.replace(/'/g,"\\'")}',this)"
+          onclick="event.stopPropagation()" />
+        <span class="flag">${flag}</span>
+        <div class="info">
+          <div class="country">${name}</div>
+          <div class="capital">${capital}</div>
+        </div>`;
+      row.addEventListener('click', e => {
+        if (e.target.tagName === 'INPUT') return;
+        const cb = row.querySelector('input');
+        cb.checked = !cb.checked;
+        toggle(flag, name, cb);
+      });
+      sec.appendChild(row);
+    });
+
+    listEl.appendChild(sec);
+  });
+
+  if (!any) listEl.innerHTML = '<div class="empty">No results found.</div>';
+  updateCounter();
+}
+
+render();
+</script>
+</body>
+</html>
