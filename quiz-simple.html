@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Capitals Quiz</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 0 16px; }
+    h1 { font-size: 1.4rem; margin-bottom: 16px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 1rem; }
+    input[type="checkbox"] { width: 22px; height: 22px; flex-shrink: 0; }
+    .country { font-weight: bold; }
+    .capital { color: #555; }
+    h2 { margin: 24px 0 8px; font-size: 1rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+<h1>🌍 Country Capitals Quiz</h1>
+
+<h2>Africa</h2>
+<ul>
+  <li><input type="checkbox"><span class="country">Algeria</span> — <span class="capital">Algiers</span></li>
+  <li><input type="checkbox"><span class="country">Angola</span> — <span class="capital">Luanda</span></li>
+  <li><input type="checkbox"><span class="country">Benin</span> — <span class="capital">Porto-Novo</span></li>
+  <li><input type="checkbox"><span class="country">Botswana</span> — <span class="capital">Gaborone</span></li>
+  <li><input type="checkbox"><span class="country">Burkina Faso</span> — <span class="capital">Ouagadougou</span></li>
+  <li><input type="checkbox"><span class="country">Burundi</span> — <span class="capital">Gitega</span></li>
+  <li><input type="checkbox"><span class="country">Cameroon</span> — <span class="capital">Yaoundé</span></li>
+  <li><input type="checkbox"><span class="country">Cape Verde</span> — <span class="capital">Praia</span></li>
+  <li><input type="checkbox"><span class="country">Central African Republic</span> — <span class="capital">Bangui</span></li>
+  <li><input type="checkbox"><span class="country">Chad</span> — <span class="capital">N'Djamena</span></li>
+  <li><input type="checkbox"><span class="country">Comoros</span> — <span class="capital">Moroni</span></li>
+  <li><input type="checkbox"><span class="country">Congo</span> — <span class="capital">Brazzaville</span></li>
+  <li><input type="checkbox"><span class="country">DR Congo</span> — <span class="capital">Kinshasa</span></li>
+  <li><input type="checkbox"><span class="country">Djibouti</span> — <span class="capital">Djibouti</span></li>
+  <li><input type="checkbox"><span class="country">Egypt</span> — <span class="capital">Cairo</span></li>
+  <li><input type="checkbox"><span class="country">Equatorial Guinea</span> — <span class="capital">Malabo</span></li>
+  <li><input type="checkbox"><span class="country">Eritrea</span> — <span class="capital">Asmara</span></li>
+  <li><input type="checkbox"><span class="country">Eswatini</span> — <span class="capital">Mbabane</span></li>
+  <li><input type="checkbox"><span class="country">Ethiopia</span> — <span class="capital">Addis Ababa</span></li>
+  <li><input type="checkbox"><span class="country">Gabon</span> — <span class="capital">Libreville</span></li>
+  <li><input type="checkbox"><span class="country">Gambia</span> — <span class="capital">Banjul</span></li>
+  <li><input type="checkbox"><span class="country">Ghana</span> — <span class="capital">Accra</span></li>
+  <li><input type="checkbox"><span class="country">Guinea</span> — <span class="capital">Conakry</span></li>
+  <li><input type="checkbox"><span class="country">Guinea-Bissau</span> — <span class="capital">Bissau</span></li>
+  <li><input type="checkbox"><span class="country">Ivory Coast</span> — <span class="capital">Yamoussoukro</span></li>
+  <li><input type="checkbox"><span class="country">Kenya</span> — <span class="capital">Nairobi</span></li>
+  <li><input type="checkbox"><span class="country">Lesotho</span> — <span class="capital">Maseru</span></li>
+  <li><input type="checkbox"><span class="country">Liberia</span> — <span class="capital">Monrovia</span></li>
+  <li><input type="checkbox"><span class="country">Libya</span> — <span class="capital">Tripoli</span></li>
+  <li><input type="checkbox"><span class="country">Madagascar</span> — <span class="capital">Antananarivo</span></li>
+  <li><input type="checkbox"><span class="country">Malawi</span> — <span class="capital">Lilongwe</span></li>
+  <li><input type="checkbox"><span class="country">Mali</span> — <span class="capital">Bamako</span></li>
+  <li><input type="checkbox"><span class="country">Mauritania</span> — <span class="capital">Nouakchott</span></li>
+  <li><input type="checkbox"><span class="country">Mauritius</span> — <span class="capital">Port Louis</span></li>
+  <li><input type="checkbox"><span class="country">Morocco</span> — <span class="capital">Rabat</span></li>
+  <li><input type="checkbox"><span class="country">Mozambique</span> — <span class="capital">Maputo</span></li>
+  <li><input type="checkbox"><span class="country">Namibia</span> — <span class="capital">Windhoek</span></li>
+  <li><input type="checkbox"><span class="country">Niger</span> — <span class="capital">Niamey</span></li>
+  <li><input type="checkbox"><span class="country">Nigeria</span> — <span class="capital">Abuja</span></li>
+  <li><input type="checkbox"><span class="country">Rwanda</span> — <span class="capital">Kigali</span></li>
+  <li><input type="checkbox"><span class="country">Sao Tome and Principe</span> — <span class="capital">Sao Tome</span></li>
+  <li><input type="checkbox"><span class="country">Senegal</span> — <span class="capital">Dakar</span></li>
+  <li><input type="checkbox"><span class="country">Seychelles</span> — <span class="capital">Victoria</span></li>
+  <li><input type="checkbox"><span class="country">Sierra Leone</span> — <span class="capital">Freetown</span></li>
+  <li><input type="checkbox"><span class="country">Somalia</span> — <span class="capital">Mogadishu</span></li>
+  <li><input type="checkbox"><span class="country">South Africa</span> — <span class="capital">Pretoria</span></li>
+  <li><input type="checkbox"><span class="country">South Sudan</span> — <span class="capital">Juba</span></li>
+  <li><input type="checkbox"><span class="country">Sudan</span> — <span class="capital">Khartoum</span></li>
+  <li><input type="checkbox"><span class="country">Tanzania</span> — <span class="capital">Dodoma</span></li>
+  <li><input type="checkbox"><span class="country">Togo</span> — <span class="capital">Lome</span></li>
+  <li><input type="checkbox"><span class="country">Tunisia</span> — <span class="capital">Tunis</span></li>
+  <li><input type="checkbox"><span class="country">Uganda</span> — <span class="capital">Kampala</span></li>
+  <li><input type="checkbox"><span class="country">Zambia</span> — <span class="capital">Lusaka</span></li>
+  <li><input type="checkbox"><span class="country">Zimbabwe</span> — <span class="capital">Harare</span></li>
+</ul>
+
+<h2>Americas</h2>
+<ul>
+  <li><input type="checkbox"><span class="country">Antigua and Barbuda</span> — <span class="capital">Saint John's</span></li>
+  <li><input type="checkbox"><span class="country">Argentina</span> — <span class="capital">Buenos Aires</span></li>
+  <li><input type="checkbox"><span class="country">Bahamas</span> — <span class="capital">Nassau</span></li>
+  <li><input type="checkbox"><span class="country">Barbados</span> — <span class="capital">Bridgetown</span></li>
+  <li><input type="checkbox"><span class="country">Belize</span> — <span class="capital">Belmopan</span></li>
+  <li><input type="checkbox"><span class="country">Bolivia</span> — <span class="capital">Sucre</span></li>
+  <li><input type="checkbox"><span class="country">Brazil</span> — <span class="capital">Brasilia</span></li>
+  <li><input type="checkbox"><span class="country">Canada</span> — <span class="capital">Ottawa</span></li>
+  <li><input type="checkbox"><span class="country">Chile</span> — <span class="capital">Santiago</span></li>
+  <li><input type="checkbox"><span class="country">Colombia</span> — <span class="capital">Bogota</span></li>
+  <li><input type="checkbox"><span class="country">Costa Rica</span> — <span class="capital">San Jose</span></li>
+  <li><input type="checkbox"><span class="country">Cuba</span> — <span class="capital">Havana</span></li>
+  <li><input type="checkbox"><span class="country">Dominica</span> — <span class="capital">Roseau</span></li>
+  <li><input type="checkbox"><span class="country">Dominican Republic</span> — <span class="capital">Santo Domingo</span></li>
+  <li><input type="checkbox"><span class="country">Ecuador</span> — <span class="capital">Quito</span></li>
+  <li><input type="checkbox"><span class="country">El Salvador</span> — <span class="capital">San Salvador</span></li>
+  <li><input type="checkbox"><span class="country">Grenada</span> — <span class="capital">Saint George's</span></li>
+  <li><input type="checkbox"><span class="country">Guatemala</span> — <span class="capital">Guatemala City</span></li>
+  <li><input type="checkbox"><span class="country">Guyana</span> — <span class="capital">Georgetown</span></li>
+  <li><input type="checkbox"><span class="country">Haiti</span> — <span class="capital">Port-au-Prince</span></li>
+  <li><input type="checkbox"><span class="country">Honduras</span> — <span class="capital">Tegucigalpa</span></li>
+  <li><input type="checkbox"><span class="country">Jamaica</span> — <span class="capital">Kingston</span></li>
+  <li><input type="checkbox"><span class="country">Mexico</span> — <span class="capital">Mexico City</span></li>
+  <li><input type="checkbox"><span class="country">Nicaragua</span> — <span class="capital">Managua</span></li>
+  <li><input type="checkbox"><span class="country">Panama</span> — <span class="capital">Panama City</span></li>
+  <li><input type="checkbox"><span class="country">Paraguay</span> — <span class="capital">Asuncion</span></li>
+  <li><input type="checkbox"><span class="country">Peru</span> — <span class="capital">Lima</span></li>
+  <li><input type="checkbox"><span class="country">Saint Kitts and Nevis</span> — <span class="capital">Basseterre</span></li>
+  <li><input type="checkbox"><span class="country">Saint Lucia</span> — <span class="capital">Castries</span></li>
+  <li><input type="checkbox"><span class="country">Saint Vincent and the Grenadines</span> — <span class="capital">Kingstown</span></li>
+  <li><input type="checkbox"><span class="country">Suriname</span> — <span class="capital">Paramaribo</span></li>
+  <li><input type="checkbox"><span class="country">Trinidad and Tobago</span> — <span class="capital">Port of Spain</span></li>
+  <li><input type="checkbox"><span class="country">United States</span> — <span class="capital">Washington D.C.</span></li>
+  <li><input type="checkbox"><span class="country">Uruguay</span> — <span class="capital">Montevideo</span></li>
+  <li><input type="checkbox"><span class="country">Venezuela</span> — <span class="capital">Caracas</span></li>
+</ul>
+
+<h2>Asia</h2>
+<ul>
+  <li><input type="checkbox"><span class="country">Afghanistan</span> — <span class="capital">Kabul</span></li>
+  <li><input type="checkbox"><span class="country">Armenia</span> — <span class="capital">Yerevan</span></li>
+  <li><input type="checkbox"><span class="country">Azerbaijan</span> — <span class="capital">Baku</span></li>
+  <li><input type="checkbox"><span class="country">Bahrain</span> — <span class="capital">Manama</span></li>
+  <li><input type="checkbox"><span class="country">Bangladesh</span> — <span class="capital">Dhaka</span></li>
+  <li><input type="checkbox"><span class="country">Bhutan</span> — <span class="capital">Thimphu</span></li>
+  <li><input type="checkbox"><span class="country">Brunei</span> — <span class="capital">Bandar Seri Begawan</span></li>
+  <li><input type="checkbox"><span class="country">Cambodia</span> — <span class="capital">Phnom Penh</span></li>
+  <li><input type="checkbox"><span class="country">China</span> — <span class="capital">Beijing</span></li>
+  <li><input type="checkbox"><span class="country">Cyprus</span> — <span class="capital">Nicosia</span></li>
+  <li><input type="checkbox"><span class="country">Georgia</span> — <span class="capital">Tbilisi</span></li>
+  <li><input type="checkbox"><span class="country">India</span> — <span class="capital">New Delhi</span></li>
+  <li><input type="checkbox"><span class="country">Indonesia</span> — <span class="capital">Jakarta</span></li>
+  <li><input type="checkbox"><span class="country">Iran</span> — <span class="capital">Tehran</span></li>
+  <li><input type="checkbox"><span class="country">Iraq</span> — <span class="capital">Baghdad</span></li>
+  <li><input type="checkbox"><span class="country">Israel</span> — <span class="capital">Jerusalem</span></li>
+  <li><input type="checkbox"><span class="country">Japan</span> — <span class="capital">Tokyo</span></li>
+  <li><input type="checkbox"><span class="country">Jordan</span> — <span class="capital">Amman</span></li>
+  <li><input type="checkbox"><span class="country">Kazakhstan</span> — <span class="capital">Astana</span></li>
+  <li><input type="checkbox"><span class="country">Kuwait</span> — <span class="capital">Kuwait City</span></li>
+  <li><input type="checkbox"><span class="country">Kyrgyzstan</span> — <span class="capital">Bishkek</span></li>
+  <li><input type="checkbox"><span class="country">Laos</span> — <span class="capital">Vientiane</span></li>
+  <li><input type="checkbox"><span class="country">Lebanon</span> — <span class="capital">Beirut</span></li>
+  <li><input type="checkbox"><span class="country">Malaysia</span> — <span class="capital">Kuala Lumpur</span></li>
+  <li><input type="checkbox"><span class="country">Maldives</span> — <span class="capital">Male</span></li>
+  <li><input type="checkbox"><span class="country">Mongolia</span> — <span class="capital">Ulaanbaatar</span></li>
+  <li><input type="checkbox"><span class="country">Myanmar</span> — <span class="capital">Naypyidaw</span></li>
+  <li><input type="checkbox"><span class="country">Nepal</span> — <span class="capital">Kathmandu</span></li>
+  <li><input type="checkbox"><span class="country">North Korea</span> — <span class="capital">Pyongyang</span></li>
+  <li><input type="checkbox"><span class="country">Oman</span> — <span class="capital">Muscat</span></li>
+  <li><input type="checkbox"><span class="country">Pakistan</span> — <span class="capital">Islamabad</span></li>
+  <li><input type="checkbox"><span class="country">Philippines</span> — <span class="capital">Manila</span></li>
+  <li><input type="checkbox"><span class="country">Qatar</span> — <span class="capital">Doha</span></li>
+  <li><input type="checkbox"><span class="country">Saudi Arabia</span> — <span class="capital">Riyadh</span></li>
+  <li><input type="checkbox"><span class="country">Singapore</span> — <span class="capital">Singapore</span></li>
+  <li><input type="checkbox"><span class="country">South Korea</span> — <span class="capital">Seoul</span></li>
+  <li><input type="checkbox"><span class="country">Sri Lanka</span> — <span class="capital">Colombo</span></li>
+  <li><input type="checkbox"><span class="country">Syria</span> — <span class="capital">Damascus</span></li>
+  <li><input type="checkbox"><span class="country">Taiwan</span> — <span class="capital">Taipei</span></li>
+  <li><input type="checkbox"><span class="country">Tajikistan</span> — <span class="capital">Dushanbe</span></li>
+  <li><input type="checkbox"><span class="country">Thailand</span> — <span class="capital">Bangkok</span></li>
+  <li><input type="checkbox"><span class="country">Timor-Leste</span> — <span class="capital">Dili</span></li>
+  <li><input type="checkbox"><span class="country">Turkmenistan</span> — <span class="capital">Ashgabat</span></li>
+  <li><input type="checkbox"><span class="country">UAE</span> — <span class="capital">Abu Dhabi</span></li>
+  <li><input type="checkbox"><span class="country">Uzbekistan</span> — <span class="capital">Tashkent</span></li>
+  <li><input type="checkbox"><span class="country">Vietnam</span> — <span class="capital">Hanoi</span></li>
+  <li><input type="checkbox"><span class="country">Yemen</span> — <span class="capital">Sana'a</span></li>
+</ul>
+
+<h2>Europe</h2>
+<ul>
+  <li><input type="checkbox"><span class="country">Albania</span> — <span class="capital">Tirana</span></li>
+  <li><input type="checkbox"><span class="country">Andorra</span> — <span class="capital">Andorra la Vella</span></li>
+  <li><input type="checkbox"><span class="country">Austria</span> — <span class="capital">Vienna</span></li>
+  <li><input type="checkbox"><span class="country">Belarus</span> — <span class="capital">Minsk</span></li>
+  <li><input type="checkbox"><span class="country">Belgium</span> — <span class="capital">Brussels</span></li>
+  <li><input type="checkbox"><span class="country">Bosnia and Herzegovina</span> — <span class="capital">Sarajevo</span></li>
+  <li><input type="checkbox"><span class="country">Bulgaria</span> — <span class="capital">Sofia</span></li>
+  <li><input type="checkbox"><span class="country">Croatia</span> — <span class="capital">Zagreb</span></li>
+  <li><input type="checkbox"><span class="country">Czech Republic</span> — <span class="capital">Prague</span></li>
+  <li><input type="checkbox"><span class="country">Denmark</span> — <span class="capital">Copenhagen</span></li>
+  <li><input type="checkbox"><span class="country">Estonia</span> — <span class="capital">Tallinn</span></li>
+  <li><input type="checkbox"><span class="country">Finland</span> — <span class="capital">Helsinki</span></li>
+  <li><input type="checkbox"><span class="country">France</span> — <span class="capital">Paris</span></li>
+  <li><input type="checkbox"><span class="country">Germany</span> — <span class="capital">Berlin</span></li>
+  <li><input type="checkbox"><span class="country">Greece</span> — <span class="capital">Athens</span></li>
+  <li><input type="checkbox"><span class="country">Hungary</span> — <span class="capital">Budapest</span></li>
+  <li><input type="checkbox"><span class="country">Iceland</span> — <span class="capital">Reykjavik</span></li>
+  <li><input type="checkbox"><span class="country">Ireland</span> — <span class="capital">Dublin</span></li>
+  <li><input type="checkbox"><span class="country">Italy</span> — <span class="capital">Rome</span></li>
+  <li><input type="checkbox"><span class="country">Kosovo</span> — <span class="capital">Pristina</span></li>
+  <li><input type="checkbox"><span class="country">Latvia</span> — <span class="capital">Riga</span></li>
+  <li><input type="checkbox"><span class="country">Liechtenstein</span> — <span class="capital">Vaduz</span></li>
+  <li><input type="checkbox"><span class="country">Lithuania</span> — <span class="capital">Vilnius</span></li>
+  <li><input type="checkbox"><span class="country">Luxembourg</span> — <span class="capital">Luxembourg City</span></li>
+  <li><input type="checkbox"><span class="country">Malta</span> — <span class="capital">Valletta</span></li>
+  <li><input type="checkbox"><span class="country">Moldova</span> — <span class="capital">Chisinau</span></li>
+  <li><input type="checkbox"><span class="country">Monaco</span> — <span class="capital">Monaco</span></li>
+  <li><input type="checkbox"><span class="country">Montenegro</span> — <span class="capital">Podgorica</span></li>
+  <li><input type="checkbox"><span class="country">Netherlands</span> — <span class="capital">Amsterdam</span></li>
+  <li><input type="checkbox"><span class="country">North Macedonia</span> — <span class="capital">Skopje</span></li>
+  <li><input type="checkbox"><span class="country">Norway</span> — <span class="capital">Oslo</span></li>
+  <li><input type="checkbox"><span class="country">Poland</span> — <span class="capital">Warsaw</span></li>
+  <li><input type="checkbox"><span class="country">Portugal</span> — <span class="capital">Lisbon</span></li>
+  <li><input type="checkbox"><span class="country">Romania</span> — <span class="capital">Bucharest</span></li>
+  <li><input type="checkbox"><span class="country">Russia</span> — <span class="capital">Moscow</span></li>
+  <li><input type="checkbox"><span class="country">San Marino</span> — <span class="capital">San Marino</span></li>
+  <li><input type="checkbox"><span class="country">Serbia</span> — <span class="capital">Belgrade</span></li>
+  <li><input type="checkbox"><span class="country">Slovakia</span> — <span class="capital">Bratislava</span></li>
+  <li><input type="checkbox"><span class="country">Slovenia</span> — <span class="capital">Ljubljana</span></li>
+  <li><input type="checkbox"><span class="country">Spain</span> — <span class="capital">Madrid</span></li>
+  <li><input type="checkbox"><span class="country">Sweden</span> — <span class="capital">Stockholm</span></li>
+  <li><input type="checkbox"><span class="country">Switzerland</span> — <span class="capital">Bern</span></li>
+  <li><input type="checkbox"><span class="country">Ukraine</span> — <span class="capital">Kyiv</span></li>
+  <li><input type="checkbox"><span class="country">United Kingdom</span> — <span class="capital">London</span></li>
+  <li><input type="checkbox"><span class="country">Vatican City</span> — <span class="capital">Vatican City</span></li>
+</ul>
+
+<h2>Oceania</h2>
+<ul>
+  <li><input type="checkbox"><span class="country">Australia</span> — <span class="capital">Canberra</span></li>
+  <li><input type="checkbox"><span class="country">Fiji</span> — <span class="capital">Suva</span></li>
+  <li><input type="checkbox"><span class="country">Kiribati</span> — <span class="capital">South Tarawa</span></li>
+  <li><input type="checkbox"><span class="country">Marshall Islands</span> — <span class="capital">Majuro</span></li>
+  <li><input type="checkbox"><span class="country">Micronesia</span> — <span class="capital">Palikir</span></li>
+  <li><input type="checkbox"><span class="country">Nauru</span> — <span class="capital">Yaren</span></li>
+  <li><input type="checkbox"><span class="country">New Zealand</span> — <span class="capital">Wellington</span></li>
+  <li><input type="checkbox"><span class="country">Palau</span> — <span class="capital">Ngerulmud</span></li>
+  <li><input type="checkbox"><span class="country">Papua New Guinea</span> — <span class="capital">Port Moresby</span></li>
+  <li><input type="checkbox"><span class="country">Samoa</span> — <span class="capital">Apia</span></li>
+  <li><input type="checkbox"><span class="country">Solomon Islands</span> — <span class="capital">Honiara</span></li>
+  <li><input type="checkbox"><span class="country">Tonga</span> — <span class="capital">Nuku'alofa</span></li>
+  <li><input type="checkbox"><span class="country">Tuvalu</span> — <span class="capital">Funafuti</span></li>
+  <li><input type="checkbox"><span class="country">Vanuatu</span> — <span class="capital">Port Vila</span></li>
+</ul>
+
+</body>
+</html>
